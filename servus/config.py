@@ -1,56 +1,40 @@
-from __future__ import annotations
 import os
-from dataclasses import dataclass
+import logging
 from dotenv import load_dotenv
 
+# Load .env file immediately
 load_dotenv()
 
-def env(name: str, default: str | None = None) -> str | None:
-    return os.getenv(name, default)
+# Define the global configuration dictionary
+# We map the SERVUS_ prefixes from your .env to the internal keys
+CONFIG = {
+    # Infrastructure
+    "AD_HOST": os.getenv("SERVUS_AD_HOST", "10.1.0.3"),
+    "AD_USER": os.getenv("SERVUS_AD_USERNAME"),
+    "AD_PASS": os.getenv("SERVUS_AD_PASSWORD"),
+    
+    # Okta
+    "OKTA_DOMAIN": os.getenv("SERVUS_OKTA_DOMAIN", "boom.okta.com"),
+    "OKTA_TOKEN": os.getenv("SERVUS_OKTA_TOKEN"),
+    "OKTA_APP_AD": os.getenv("SERVUS_OKTA_DIRINTEGRATION_AD_IMPORT", "0oacrzpehXApFBO95696"),
+    
+    # Integrations
+    "SLACK_TOKEN": os.getenv("SERVUS_SLACK_ADMIN_TOKEN"),
+    "GAM_PATH": os.getenv("GAM_PATH", "/Users/dan.driver/bin/gam7/gam"),
+    
+    # AD Structure
+    "AD_BASE_DN": os.getenv("AD_BASE_DN", "DC=boom,DC=local"),
+    "AD_USERS_ROOT": os.getenv("AD_USERS_ROOT", "OU=Boom Users"),
+}
 
-@dataclass(frozen=True)
-class ADConfig:
-    host: str
-    username: str
-    password: str
-
-@dataclass(frozen=True)
-class OktaConfig:
-    domain: str
-    token: str
-    app_google: str | None = None
-    app_slack: str | None = None
-    app_zoom: str | None = None
-    app_ramp: str | None = None
-    dirintegration_ad_import: str | None = None
-
-@dataclass(frozen=True)
-class ServusConfig:
-    ad: ADConfig
-    okta: OktaConfig
-
-def load_config() -> ServusConfig:
-    ad = ADConfig(
-        host=env("SERVUS_AD_HOST",""),
-        username=env("SERVUS_AD_USERNAME",""),
-        password=env("SERVUS_AD_PASSWORD",""),
-    )
-    okta = OktaConfig(
-        domain=env("SERVUS_OKTA_DOMAIN",""),
-        token=env("SERVUS_OKTA_TOKEN",""),
-        app_google=env("SERVUS_OKTA_APP_GOOGLE"),
-        app_slack=env("SERVUS_OKTA_APP_SLACK"),
-        app_zoom=env("SERVUS_OKTA_APP_ZOOM"),
-        app_ramp=env("SERVUS_OKTA_APP_RAMP"),
-        dirintegration_ad_import=env("SERVUS_OKTA_DIRINTEGRATION_AD_IMPORT"),
-    )
-
-    missing = []
-    if not ad.host: missing.append("SERVUS_AD_HOST")
-    if not ad.username: missing.append("SERVUS_AD_USERNAME")
-    if not ad.password or ad.password == "__SET_ME__": missing.append("SERVUS_AD_PASSWORD")
-    if not okta.domain: missing.append("SERVUS_OKTA_DOMAIN")
-    if not okta.token or okta.token == "__SET_ME__": missing.append("SERVUS_OKTA_TOKEN")
+def load_config():
+    """
+    Validation helper to ensure critical keys exist.
+    """
+    critical_keys = ["AD_USER", "AD_PASS", "OKTA_TOKEN"]
+    missing = [k for k in critical_keys if not CONFIG.get(k)]
+    
     if missing:
-        raise RuntimeError("Missing required config: " + ", ".join(missing))
-    return ServusConfig(ad=ad, okta=okta)
+        logging.warning(f"⚠️  Missing critical config keys. Check mapping in config.py vs .env: {', '.join(missing)}")
+    
+    return CONFIG

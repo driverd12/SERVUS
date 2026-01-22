@@ -4,3 +4,4 @@ python-dotenv>=1.0.1
 pydantic>=2.7.0
 tenacity>=8.2.3
 pywinrm>=0.4.3
+email-validator

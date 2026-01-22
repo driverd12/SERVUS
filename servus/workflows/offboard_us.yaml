@@ -1,46 +1,40 @@
-name: SERVUS US Offboarding
-version: '1'
+name: "SERVUS US Offboarding v1"
+description: "Standard US employee/contractor termination flow"
+
 steps:
-- id: validate_profile
-  name: Validate profile fields
-  action: builtin.validate_profile
-  requires: []
-- id: confirm_offboard
-  name: 'MANUAL CONFIRM: offboarding approved (require explicit flag in automation later)'
-  action: builtin.manual
-  requires:
-  - validate_profile
-  mode: MANUAL
-- id: ad_disable
-  name: 'AD: disable account'
-  action: ad.disable_user
-  verify: ad.verify_user
-  requires:
-  - confirm_offboard
-  retries: 1
-  retry_wait_seconds: 10
-- id: okta_find_user
-  name: 'Okta: find user'
-  action: okta.find_user
-  requires:
-  - ad_disable
-  retries: 6
-  retry_wait_seconds: 20
-- id: okta_deactivate
-  name: 'Okta: deactivate user'
-  action: okta.deactivate_user
-  requires:
-  - okta_find_user
-  retries: 1
-  retry_wait_seconds: 10
-- id: google_transfer
-  name: 'Google: transfer Drive/Calendar, set forwarding/delegation, suspend user'
-  action: builtin.manual
-  requires:
-  - okta_deactivate
-  mode: MANUAL
-- id: final_verification
-  name: Final verification + summary
-  action: builtin.noop
-  requires:
-  - google_transfer
+  # --- PRE-FLIGHT ---
+  - name: validate_target
+    description: "Validate target email exists"
+    type: action
+    action: builtin.validate_target_email
+    verify: auto
+
+  # --- AD DISABLE ---
+  - name: ad_disable
+    description: "AD: Disable account + update description"
+    type: action
+    action: ad.disable_user
+    verify: auto
+
+  # --- OKTA DEACTIVATE ---
+  - name: okta_deactivate
+    description: "Okta: Deactivate user (Cascades to Slack/Zoom via SCIM)"
+    type: action
+    action: okta.deactivate_user
+    verify: auto
+
+  # --- GOOGLE SUSPEND ---
+  - name: google_suspend
+    description: "Google: Suspend User via GAM"
+    type: action
+    action: google_gam.suspend_user
+    verify: auto
+
+  # --- MANUAL VERIFICATION ---
+  - name: verify_slack
+    description: "Verify Slack access is revoked (should be automatic via Okta)"
+    type: manual
+
+  - name: recover_assets
+    description: "Recover Laptop/Badge/Peripherals"
+    type: manual

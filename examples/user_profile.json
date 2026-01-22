@@ -1,15 +1,12 @@
 {
   "first_name": "Trista",
   "last_name": "Gooday",
-  "preferred_name": null,
   "work_email": "trista.gooday@boom.aero",
-  "personal_email": "goodaytrista@gmail.com",
-  "start_date": "2026-01-20",
-  "worker_type": "CON",
-  "department": "Shipping & Receiving",
-  "department_number": null,
-  "manager_email": "nate.helper@boom.aero",
-  "location": "CO",
-  "is_service_account": false,
-  "needs_mac": false
+  "personal_email": "trista.test@gmail.com",
+  "department": "Engineering",
+  "title": "Software Engineer",
+  "manager_email": "manager@boom.aero",
+  "employment_type": "Contractor", 
+  "start_date": "2026-02-01",
+  "location": "Denver"
 }

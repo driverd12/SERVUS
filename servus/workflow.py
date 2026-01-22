@@ -1,37 +1,52 @@
-from __future__ import annotations
-from dataclasses import dataclass
 import yaml
+import logging
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
 
-@dataclass
-class Step:
+logger = logging.getLogger("servus.workflow")
+
+class WorkflowStep(BaseModel):
     id: str
-    name: str
-    action: str
-    requires: list[str]
-    verify: str | None = None
-    retries: int = 0
-    retry_wait_seconds: int = 5
-    mode: str = "AUTO"  # AUTO|MANUAL
+    description: str
+    type: str  # "action", "manual", "trigger"
+    action: Optional[str] = None
+    verify: Optional[str] = "manual"  # "auto", "manual", "none"
+    params: Dict[str, Any] = Field(default_factory=dict)
 
-@dataclass
-class Workflow:
+class Workflow(BaseModel):
     name: str
-    version: str
-    steps: list[Step]
+    description: str
+    steps: List[WorkflowStep]
 
-def load_workflow(path: str) -> Workflow:
-    with open(path, "r", encoding="utf-8") as f:
-        obj = yaml.safe_load(f)
+def load_workflow(yaml_path: str) -> Workflow:
+    """
+    Parses the YAML workflow file into a strict Pydantic model.
+    Handles 'name' vs 'id' mismatch automatically.
+    """
+    with open(yaml_path, "r") as f:
+        raw = yaml.safe_load(f)
+
     steps = []
-    for s in obj.get("steps", []):
-        steps.append(Step(
-            id=s["id"],
-            name=s.get("name", s["id"]),
-            action=s.get("action", "builtin.noop"),
-            requires=s.get("requires", []),
-            verify=s.get("verify"),
-            retries=int(s.get("retries", 0)),
-            retry_wait_seconds=int(s.get("retry_wait_seconds", 5)),
-            mode=s.get("mode", "AUTO"),
-        ))
-    return Workflow(name=obj.get("name","SERVUS Workflow"), version=str(obj.get("version","1")), steps=steps)
+    for s in raw.get("steps", []):
+        # 🛠️ FIX: If 'id' is missing, use 'name' as the ID
+        step_id = s.get("id") or s.get("name")
+        
+        if not step_id:
+            logger.error(f"Step missing 'id' or 'name': {s}")
+            continue
+
+        # Ensure we pass 'id' to the model even if the YAML had 'name'
+        s_data = s.copy()
+        s_data["id"] = step_id
+        
+        # 'name' is not a field in WorkflowStep, so we remove it to avoid validation error
+        if "name" in s_data:
+            del s_data["name"]
+        
+        steps.append(WorkflowStep(**s_data))
+
+    return Workflow(
+        name=raw["name"],
+        description=raw["description"],
+        steps=steps
+    )

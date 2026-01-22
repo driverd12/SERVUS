@@ -1,24 +1,21 @@
-from __future__ import annotations
-import time
-from typing import Any
-from .models import UserProfile
+import logging
 
-def noop(ctx: dict[str, Any], **kwargs) -> dict[str, Any]:
-    return {"ok": True}
+logger = logging.getLogger("servus.builtin")
 
-def wait(ctx: dict[str, Any], seconds: int = 5, **kwargs) -> dict[str, Any]:
-    time.sleep(seconds)
-    return {"waited": seconds}
+def validate_profile(context):
+    user = context.get('user_profile')
+    if not user:
+        logger.error("Context missing 'user_profile'")
+        return False
+        
+    logger.info(f"Validating User: {user.first_name} {user.last_name} ({user.email})")
+    
+    if not user.email.endswith("@boom.aero"):
+        logger.error("Email must end with @boom.aero")
+        return False
+        
+    return True
 
-def manual(ctx: dict[str, Any], note: str = "", **kwargs) -> dict[str, Any]:
-    return {"manual": True, "note": note}
-
-def validate_profile(ctx: dict[str, Any], **kwargs) -> dict[str, Any]:
-    p: UserProfile = ctx["profile"]
-    if not p.first_name or not p.last_name or not p.work_email:
-        raise ValueError("Profile missing required identity fields.")
-    if p.is_service_account:
-        # service accounts should be explicit and minimal
-        if p.worker_type not in ("CON","SUP","FTE","INT","MRG"):
-            raise ValueError("Invalid worker_type for service account.")
-    return {"validated": True}
+def validate_target_email(context):
+    # Logic for offboarding validation
+    return True

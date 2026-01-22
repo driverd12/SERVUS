@@ -1,38 +1,53 @@
-from __future__ import annotations
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from typing import Optional
 from datetime import date
-from enum import Enum
-from pydantic import BaseModel, Field, EmailStr
-
-class WorkerType(str, Enum):
-    FTE = "FTE"
-    CON = "CON"
-    INT = "INT"
-    MRG = "MRG"
-    SUP = "SUP"
 
 class UserProfile(BaseModel):
-    first_name: str = Field(min_length=1)
-    last_name: str = Field(min_length=1)
-    preferred_name: str | None = None
+    # --- RAW DATA FIELDS (Matches your JSON/Rippling) ---
+    first_name: str
+    last_name: str
+    work_email: EmailStr  # Pydantic will validate this is an email
+    personal_email: Optional[EmailStr] = None
+    
+    department: str
+    title: Optional[str] = None
+    manager_email: Optional[EmailStr] = None
+    
+    # "Full-Time", "Contractor", "Intern"
+    employment_type: str 
+    
+    start_date: Optional[str] = None
+    location: Optional[str] = "US"
 
-    work_email: EmailStr
-    personal_email: EmailStr | None = None
-
-    start_date: date | None = None
-    worker_type: WorkerType = WorkerType.FTE
-
-    department: str | None = None
-    department_number: str | None = None
-    manager_email: EmailStr | None = None
-    location: str | None = None
-
-    is_service_account: bool = False
-    needs_mac: bool = False
+    # --- HELPER PROPERTIES (The "Bridge") ---
+    
+    @property
+    def email(self) -> str:
+        """Standard alias for work_email"""
+        return self.work_email
 
     @property
-    def username(self) -> str:
-        return str(self.work_email).split("@", 1)[0]
+    def user_type(self) -> str:
+        """
+        Translates raw employment_type into SERVUS codes:
+        'Full-Time' -> 'FTE'
+        'Contractor' -> 'CON'
+        'Intern'     -> 'INT'
+        """
+        raw = self.employment_type.lower()
+        if "contractor" in raw:
+            return "CON"
+        elif "intern" in raw:
+            return "INT"
+        else:
+            return "FTE" # Default to FTE for "Full-Time" or others
 
     @property
-    def display_name(self) -> str:
+    def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
+
+    # --- VALIDATORS ---
+    
+    @field_validator('department')
+    def validate_dept(cls, v):
+        return v.strip()  # Clean up whitespace

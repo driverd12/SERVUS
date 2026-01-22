@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+# keep .env.example committed
+.env.local
+.env.*.local
+logs/
+servus_state/
+.DS_Store

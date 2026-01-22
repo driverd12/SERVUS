@@ -1,0 +1,41 @@
+on_prem:
+- name: '#hq4_alarm'
+all_users:
+- name: '#be-inspired'
+  id: CUM4497U5
+- name: '#ciso'
+  id: C03EVQF5XT4
+- name: '#hq4-announcements'
+  id: C0HDVLJRW
+- name: '#hq4-facilities'
+  id: C04N9EYMZH8
+- name: '#news'
+  id: C0HDTU95W
+- name: '#quotewall'
+  id: C0CNSTACE
+- name: '#random'
+  id: C03K49RUT
+fte:
+- name: '#company-announcements'
+  id: C03K49RUR
+- name: '#arrivals-departures'
+  id: C0586LM1K6Z
+- name: arrivals-departures
+- name: be-inspired
+- name: boomu
+- name: ciso
+- name: hq4_alarm
+- name: hq4-announcements
+- name: hq4-facilities
+- name: quotewall
+- name: random
+con:
+- name: '#contractor-announcements'
+  id: C027SL8CW95
+mgr:
+- name: '#people-management'
+  id: G011Z2YQ7B8
+- name: '#company-announcements'
+  id: C03K49RUR
+- name: '#arrivals-departures'
+  id: C0586LM1K6Z

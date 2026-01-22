@@ -1,0 +1,162 @@
+name: SERVUS US Onboarding
+version: '1'
+steps:
+- id: validate_profile
+  name: Validate profile fields (avoid typos/empty shells)
+  action: builtin.validate_profile
+  requires: []
+- id: ad_provision
+  name: 'AD: create/reactivate + move to OU'
+  action: ad.provision_user
+  verify: ad.verify_user
+  requires:
+  - validate_profile
+  retries: 1
+  retry_wait_seconds: 10
+- id: okta_trigger_import
+  name: 'Okta: trigger AD incremental import'
+  action: okta.trigger_ad_import
+  requires:
+  - ad_provision
+  retries: 1
+  retry_wait_seconds: 10
+- id: okta_find_user
+  name: 'Okta: wait for user to appear'
+  action: okta.find_user
+  requires:
+  - okta_trigger_import
+  retries: 6
+  retry_wait_seconds: 20
+- id: okta_assign_apps
+  name: 'Okta: assign core apps (Google/Slack; +Zoom/Ramp for FTE)'
+  action: okta.assign_apps
+  requires:
+  - okta_find_user
+  retries: 1
+  retry_wait_seconds: 10
+- id: hardware_type_determined_3d_windows_windows_mac_etc
+  name: Hardware type determined - 3D Windows, Windows, Mac, etc
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: hardware_procured_received
+  name: Hardware procured / received
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: hardware_imaged
+  name: Hardware imaged
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: hardware_updated
+  name: Hardware updated
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: desk_identified_on_map
+  name: Desk identified, on map
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: peripherals_kitted
+  name: Peripherals kitted
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: ad_set_extended_attributes_email_country_employeetype_depart
+  name: AD - Set extended attributes - Email, Country, EmployeeType, Department
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: google_google_account_create_reactivate
+  name: Google - Google account create / reactivate
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: google_move_user_to_proper_ou_may_be_us_persons
+  name: Google - Move User to Proper OU (May be US Persons)
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: google_add_to_appropriate_groups
+  name: Google - Add to appropriate groups
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: google_add_to_team_or_contractors_group
+  name: Google - Add to team@ or contractors@ group
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: google_remove_e_mail_forwarding_if_this_is_a_reactivation
+  name: Google - Remove e-mail forwarding if this is a reactivation
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: slack_create_slack
+  name: Slack - Create Slack
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: slack_add_to_proper_channels
+  name: Slack - Add to proper channels
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: okta_set_secondary_e_mail_in_profile_to_their_personal
+  name: Okta - Set Secondary E-mail in Profile to their Personal
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: okta_click_activate_to_issue_their_enrollment_email
+  name: Okta - Click "Activate" to issue their enrollment email
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: zoom
+  name: Zoom
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: office365
+  name: Office365
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: ramp
+  name: Ramp
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: badge_printed
+  name: Badge printed
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL
+- id: brivo_access
+  name: Brivo access
+  action: builtin.manual
+  requires:
+  - okta_assign_apps
+  mode: MANUAL

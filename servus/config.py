@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Define the global configuration dictionary
-# We map the SERVUS_ prefixes from your .env to the internal keys
 CONFIG = {
     # Infrastructure
     "AD_HOST": os.getenv("SERVUS_AD_HOST", "10.1.0.3"),
@@ -21,6 +20,13 @@ CONFIG = {
     # Integrations
     "SLACK_TOKEN": os.getenv("SERVUS_SLACK_ADMIN_TOKEN"),
     "GAM_PATH": os.getenv("GAM_PATH", "/Users/dan.driver/bin/gam7/gam"),
+    
+    # Freshservice (The Missing Piece)
+    "FRESHSERVICE_DOMAIN": os.getenv("SERVUS_FRESHSERVICE_DOMAIN"),
+    "FRESHSERVICE_API_KEY": os.getenv("SERVUS_FRESHSERVICE_API_KEY"),
+    
+    # Rippling
+    "RIPPLING_API_TOKEN": os.getenv("SERVUS_RIPPLING_API_TOKEN"),
     
     # AD Structure
     "AD_BASE_DN": os.getenv("AD_BASE_DN", "DC=boom,DC=local"),

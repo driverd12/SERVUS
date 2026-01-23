@@ -4,10 +4,11 @@ import sys
 import json
 import os
 from .config import load_config
-from .state import RunState  # We fixed this name in the last step
+from .state import RunState
 from .orchestrator import Orchestrator
 from .workflow import load_workflow
 from .models import UserProfile
+from .integrations import freshservice  # <--- NEW IMPORT
 
 # Configure logging
 logging.basicConfig(
@@ -20,7 +21,12 @@ def main():
     parser = argparse.ArgumentParser(description="SERVUS Identity Orchestrator")
     parser.add_argument("command", choices=["onboard", "offboard"])
     parser.add_argument("--workflow", required=True, help="Path to YAML workflow definition")
-    parser.add_argument("--profile", required=True, help="Path to User Profile JSON")
+    
+    # 🛠️ UPDATED: Allow EITHER --profile OR --ticket
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--profile", help="Path to User Profile JSON")
+    group.add_argument("--ticket", help="Freshservice Ticket ID to fetch data from")
+    
     parser.add_argument("--dry-run", action="store_true", help="Simulate actions")
     
     args = parser.parse_args()
@@ -35,34 +41,50 @@ def main():
         logger.error(f"Failed to load workflow: {e}")
         sys.exit(1)
 
-    # 3. Load User Profile
-    if not os.path.exists(args.profile):
-        logger.error(f"Profile not found: {args.profile}")
-        sys.exit(1)
+    # 3. Build User Profile (Dual Mode)
+    user = None
+    
+    if args.profile:
+        # MODE A: Local JSON File
+        if not os.path.exists(args.profile):
+            logger.error(f"Profile not found: {args.profile}")
+            sys.exit(1)
+        try:
+            with open(args.profile, 'r') as f:
+                raw_profile = json.load(f)
+                user = UserProfile(**raw_profile)
+                logger.info(f"Loaded profile from JSON: {user.email}")
+        except Exception as e:
+            logger.error(f"Invalid user profile JSON: {e}")
+            sys.exit(1)
+
+    elif args.ticket:
+        # MODE B: Freshservice Ticket (Live Data)
+        logger.info(f"🔌 Connecting to Freshservice Ticket #{args.ticket}...")
+        user = freshservice.fetch_ticket_data(args.ticket)
         
-    try:
-        with open(args.profile, 'r') as f:
-            raw_profile = json.load(f)
-            # Create the Pydantic Object
-            user = UserProfile(**raw_profile)
-    except Exception as e:
-        logger.error(f"Invalid user profile: {e}")
-        sys.exit(1)
+        if not user:
+            logger.error("❌ Failed to build profile from Ticket. Check logs above.")
+            sys.exit(1)
+            
+        logger.info(f"✅ Successfully built profile for: {user.full_name}")
+        logger.info(f"   Email: {user.email}")
+        logger.info(f"   Role:  {user.title} ({user.employment_type})")
+        logger.info(f"   Dept:  {user.department}")
 
     # 4. Initialize State
     state = RunState()
 
-    # 5. Build Context (The Dictionary)
-    # This is what gets passed to every action
+    # 5. Build Context
     context = {
         "config": config,
-        "user_profile": user,  # <--- This was missing before!
+        "user_profile": user,
         "dry_run": args.dry_run
     }
     
     print_banner()
 
-    # 6. Run
+    # 6. Run Orchestrator
     orch = Orchestrator(wf, context, state, logger)
     orch.run(dry_run=args.dry_run)
 

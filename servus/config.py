@@ -31,6 +31,11 @@ CONFIG = {
     # AD Structure
     "AD_BASE_DN": os.getenv("AD_BASE_DN", "DC=boom,DC=local"),
     "AD_USERS_ROOT": os.getenv("AD_USERS_ROOT", "OU=Boom Users"),
+
+    # Brivo Structure
+    "BRIVO_API_KEY": os.getenv("SERVUS_BRIVO_API_KEY"),
+    "BRIVO_USERNAME": os.getenv("SERVUS_BRIVO_USERNAME"),
+    "BRIVO_PASSWORD": os.getenv("SERVUS_BRIVO_PASSWORD"),
 }
 
 def load_config():

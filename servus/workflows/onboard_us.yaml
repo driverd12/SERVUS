@@ -1,65 +1,47 @@
-name: "SERVUS US Onboarding v1"
-description: "Standard US employee/contractor onboarding flow (AD -> Okta -> Apps)"
-
+name: "SERVUS US Onboarding (Okta Master Mode)"
+description: "Wait for Okta (from Rippling) -> Customize Downstream"
 steps:
-  # --- PRE-FLIGHT ---
-  - name: validate_profile
-    description: "Validate profile fields (avoid typos/empty shells)"
+  # 1. Validation
+  - id: validate
+    description: "Validate profile data"
     type: action
     action: builtin.validate_profile
-    verify: auto
 
-  # --- IDENTITY CORE (AD) ---
-  - name: ad_provision
-    description: "AD: create/reactivate + move to OU"
-    type: action
-    action: ad.provision_user
-    verify: auto
-
-  # --- IDENTITY SYNC (OKTA) ---
-  - name: okta_trigger_import
-    description: "Okta: trigger AD incremental import"
-    type: action
-    action: okta.trigger_ad_import
-    verify: manual 
-
-  - name: okta_find_user
-    description: "Okta: wait for user to appear"
+  # 2. WAIT for Identity (Replaces AD Creation)
+  # In this mode, Rippling sends user to Okta. We just wait for them to show up.
+  - id: wait_for_okta
+    description: "Poll Okta: Wait for user to sync from Rippling"
     type: action
     action: okta.find_user
-    verify: auto
 
-  - name: okta_assign_apps
-    description: "Okta: assign core apps (Google/Slack; +Zoom/Ramp for FTE)"
+  # 3. Trigger Downstream (If manual push is needed)
+  # Sometimes Okta needs a nudge to push to AD/Google immediately
+  # (Optional: keep if you want to force immediate syncs)
+  # - id: okta_push
+  #   description: "Trigger Okta push groups/updates"
+  #   type: action
+  #   action: okta.trigger_push
+
+  # 4. SaaS Customization (Google)
+  - id: google_wait_and_customize
+    description: "Google: Wait for SCIM & Move OU"
     type: action
-    action: okta.assign_apps
-    verify: auto
+    action: google_gam.wait_for_user_and_customize  # <--- We need to combine logic here or keep separate steps
 
-  # --- GOOGLE WORKSPACE (AUTOMATED) ---
-  - name: google_move_ou
-    description: "Google: Move User to Proper OU (FTE/Contractor)"
+  # 5. Google Customization (Separate Step)
+  - id: google_customize
+    description: "Google: Apply Groups & Aliases"
     type: action
     action: google_gam.move_user_ou
-    verify: auto
 
-  - name: google_groups
-    description: "Google: Add to Team/Contractor Groups"
+  # 6. Device Check (Apple)
+  - id: check_device
+    description: "Apple: Check device assignment in ABM"
     type: action
-    action: google_gam.add_to_groups
-    verify: auto
+    action: apple.check_device_assignment
 
-  # --- SLACK (AUTOMATED) ---
-  - name: slack_channels
-    description: "Slack: Add to Global & Dept Channels"
+  # 7. Physical Access (Brivo)
+  - id: physical_access
+    description: "Brivo: Create badge profile"
     type: action
-    action: slack.add_to_channels
-    verify: auto
-
-  # --- MANUAL / PHYSICAL ---
-  - name: hw_procure
-    description: "Hardware procured / received"
-    type: manual
-
-  - name: badge_print
-    description: "Badge printed"
-    type: manual
+    action: brivo.provision_access

@@ -83,7 +83,7 @@ def move_user_ou(context):
     emp_type = user.employment_type.lower()
     target_ou = "/empType-CON" # Default
     
-    if "hourly, full-time" in emp_type or "salaried, full-time" in emp_type:
+    if "full-time" in emp_type:
         target_ou = "/empType-FTE"
     elif "contractor" in emp_type or "1099" in emp_type:
         target_ou = "/empType-CON"
@@ -113,15 +113,56 @@ def move_user_ou(context):
 def add_groups(context):
     """
     Adds user to default groups based on department/role.
-    (Placeholder for existing logic)
     """
     user = context.get("user_profile")
     if not user: return False
     email = user.work_email
     
     logger.info(f"👥 Google: Adding groups for {email}...")
-    # TODO: Implement actual group logic or load from config
-    # For now, just logging as success
+    
+    groups_to_add = []
+    
+    # 1. All Hands (FTEs)
+    emp_type = user.employment_type.lower()
+    if "full-time" in emp_type:
+        groups_to_add.append("all-hands@boom.aero")
+        
+    # 2. Department Groups
+    dept = user.department.lower() if user.department else ""
+    if "engineering" in dept:
+        groups_to_add.append("engineering-all@boom.aero")
+        
+    # Add more department logic here as needed
+    
+    if not groups_to_add:
+        logger.info("   No groups matched criteria.")
+        return True
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would add {email} to groups: {groups_to_add}")
+        return True
+
+    success_count = 0
+    for group_email in groups_to_add:
+        # gam update group <group> add member <user>
+        logger.info(f"   Adding to {group_email}...")
+        # We capture output to check for "already exists" errors
+        success, stdout, stderr = run_gam(["update", "group", group_email, "add", "member", email])
+        
+        if success:
+            logger.info(f"   ✅ Added to {group_email}")
+            success_count += 1
+        else:
+            # GAM error handling
+            # Common errors: "Member already exists", "Group not found"
+            if "Member already exists" in stdout or "Member already exists" in stderr:
+                 logger.info(f"   ℹ️ Already a member of {group_email}")
+                 success_count += 1
+            elif "Group not found" in stdout or "Group not found" in stderr:
+                 logger.error(f"   ❌ Group {group_email} not found!")
+            else:
+                 logger.error(f"   ❌ Failed to add to {group_email}: {stderr}")
+             
     return True
 
 def deprovision_user(context):

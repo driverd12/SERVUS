@@ -73,12 +73,33 @@ def add_to_channels(context):
         config = yaml.safe_load(f)
 
     # 3. Determine Target Channels
-    target_channels = set(config.get("global", [])) # Start with global
+    target_channels = set()
+    emp_type = user.employment_type.lower()
     
+    # A. Employee Type Logic
+    if "supplier" in emp_type:
+        logger.info("   ℹ️ Supplier detected - skipping default channels.")
+        # Suppliers get NO default channels, only explicit department ones if allowed
+    else:
+        # Everyone else gets Global channels
+        target_channels.update(config.get("global", []))
+        
+        # Specific Role Channels
+        if "full-time" in emp_type:
+            # Add FTE specific channels if any (e.g. #all-hands is usually in global, but if split:)
+            target_channels.add("all-hands") 
+        elif "contractor" in emp_type or "1099" in emp_type:
+            target_channels.add("contractors")
+        elif "intern" in emp_type or "temporary" in emp_type:
+            target_channels.add("interns")
+
+    # B. Department Logic
     # Normalize department to lowercase for matching
     dept_key = user.department.lower() if user.department else "unknown"
     
     # Add Department specific channels if defined
+    # Note: Suppliers might need to be excluded here too depending on policy, 
+    # but usually if they are in "Engineering" they need "engineering-chat".
     if dept_key in config.get("departments", {}):
         target_channels.update(config["departments"][dept_key])
     

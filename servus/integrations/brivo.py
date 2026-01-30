@@ -1,5 +1,6 @@
 import requests
 import logging
+import time
 from servus.config import CONFIG
 from servus.integrations import badge_queue
 
@@ -68,66 +69,64 @@ class BrivoClient:
         except Exception:
             return None
 
-    def create_user(self, first, last, email):
+    def wait_for_user_scim(self, email):
         """
-        Creates a new user in Brivo.
+        Polls Brivo to wait for the user to be created by Okta SCIM.
         """
-        if not self.token and not self.login():
-            return False
-
-        existing = self.find_user(email)
-        if existing:
-            logger.info(f"ℹ️  Brivo User already exists: {existing.get('id')}")
-            return True
-
-        url = f"{self.base_url}/users"
-        headers = {
-            "api-key": self.api_key,
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
-        }
+        logger.info(f"⏳ Brivo: Waiting for SCIM to create {email}...")
         
-        payload = {
-            "firstName": first,
-            "lastName": last,
-            "email": email,
-            "externalId": email
-        }
-
-        try:
-            resp = requests.post(url, json=payload, headers=headers)
-            if resp.status_code in [200, 201]:
-                logger.info(f"✅ Created Brivo User: {first} {last}")
-                return True
-            else:
-                logger.error(f"❌ Failed to create Brivo user: {resp.text}")
-                return False
-        except Exception as e:
-            logger.error(f"❌ Brivo API Error: {e}")
-            return False
+        start_time = time.time()
+        timeout = 600 # 10 minutes
+        
+        while time.time() - start_time < timeout:
+            user = self.find_user(email)
+            if user:
+                logger.info(f"✅ Brivo: User {email} found (SCIM Synced)!")
+                return user
+            time.sleep(30)
+            
+        logger.error(f"❌ Brivo: Timed out waiting for {email}")
+        return None
 
 # --- WORKFLOW ACTIONS ---
 
 def provision_access(context):
+    """
+    Waits for Okta SCIM to create the user in Brivo, then triggers badge print.
+    """
     user = context.get("user_profile")
     if not user: return False
     
     client = BrivoClient()
-    success = client.create_user(user.first_name, user.last_name, user.work_email)
     
-    if success:
-        # Trigger Remote Print Job
-        logger.info("🖨️  Queueing Badge Print Job...")
-        if context.get("dry_run"):
-            logger.info("[DRY-RUN] Would send print job to SQS.")
-        else:
-            badge_queue.send_print_job({
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "email": user.work_email
-            })
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would wait for Brivo SCIM sync for {user.work_email}")
+        logger.info(f"[DRY-RUN] Would queue badge print job.")
+        return True
+
+    # 1. Wait for SCIM
+    brivo_user = client.wait_for_user_scim(user.work_email)
+    if not brivo_user:
+        return False
+        
+    # 2. Trigger Print Job
+    # We fetch the photo URL from Okta (or assume it flowed to Brivo if mapped)
+    # For this implementation, we rely on the local agent to pull the photo 
+    # OR we pass a URL if we have one. Okta API might be needed here to get the photo URL.
+    
+    # Placeholder for Photo URL logic
+    photo_url = None 
+    
+    logger.info("🖨️  Queueing Badge Print Job...")
+    badge_queue.send_print_job({
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.work_email,
+        "photo_url": photo_url,
+        "brivo_id": brivo_user.get("id")
+    })
             
-    return success
+    return True
 
 def suspend_user(context):
     """

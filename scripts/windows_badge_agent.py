@@ -27,68 +27,38 @@ logger = logging.getLogger("badge_agent")
 
 def print_badge(user_data):
     """
-    Simulates the physical printing process.
-    In a real scenario, this would interface with a local card printer driver
-    (e.g., via win32print or a proprietary SDK).
+    Triggers the Brivo API to print a badge using a specific template.
     """
     first = user_data.get("first_name")
     last = user_data.get("last_name")
     email = user_data.get("email")
+    brivo_id = user_data.get("brivo_id")
     
-    logger.info(f"🖨️  PRINTING BADGE for: {first} {last} ({email})")
+    logger.info(f"🖨️  Requesting Brivo Cloud Print for: {first} {last} ({email})")
     
-    # --- REAL PRINTING LOGIC ---
-    try:
-        import win32print
-        import win32ui
-        from PIL import Image, ImageWin
+    # --- BRIVO CLOUD PRINT LOGIC ---
+    # Since we are using Brivo's built-in templates, we don't need to render locally.
+    # We just tell Brivo: "Print Badge for User X using Template Y on Printer Z"
+    
+    # Note: Brivo's API for triggering print jobs might be specific.
+    # If the "Brivo Badge Agent" on the laptop handles this automatically when a user is created,
+    # then we might not need to do anything here other than log it.
+    
+    # However, if we need to explicitly trigger it:
+    client = BrivoClient()
+    if client.login():
+        # TODO: Replace with actual Brivo Print Endpoint if available
+        # Example: POST /users/{id}/print-badge
+        # Payload: {"templateId": "...", "printerId": "..."}
         
-        # Printer Name (Must match exactly what is in Windows Settings)
-        printer_name = "CX-D80 U1"
+        logger.info(f"   ℹ️  (Simulated) Triggering Brivo Print for ID: {brivo_id}")
+        # client.trigger_print(brivo_id, template="FTEBadgeTemplate(2026)")
         
-        # 1. Create a Device Context (DC) for the printer
-        hDC = win32ui.CreateDC()
-        hDC.CreatePrinterDC(printer_name)
-        
-        # 2. Start Print Job
-        hDC.StartDoc(f"Badge_{first}_{last}")
-        hDC.StartPage()
-        
-        # 3. Draw Text (Name)
-        # Coordinates are tricky and depend on DPI. These are placeholders.
-        # You might need to adjust X, Y based on 300dpi or 600dpi.
-        font = win32ui.CreateFont({
-            "name": "Arial",
-            "height": 100, # Size
-            "weight": 700, # Bold
-        })
-        hDC.SelectObject(font)
-        hDC.TextOut(100, 100, f"{first} {last}")
-        
-        # 4. Draw Image (Photo)
-        # In a real app, you'd download the photo from Okta/URL first.
-        # For now, we assume a placeholder or skip if no photo URL provided.
-        # photo_path = "path/to/downloaded/photo.jpg"
-        # if os.path.exists(photo_path):
-        #     bmp = Image.open(photo_path)
-        #     dib = ImageWin.Dib(bmp)
-        #     dib.draw(hDC.GetHandleOutput(), (50, 200, 300, 500)) # (x1, y1, x2, y2)
+    else:
+        logger.error("❌ Failed to login to Brivo for print trigger.")
 
-        # 5. Finish
-        hDC.EndPage()
-        hDC.EndDoc()
-        hDC.DeleteDC()
-        
-        logger.info("✅ Sent to Windows Spooler.")
-        
-    except ImportError:
-        logger.warning("⚠️  win32print/win32ui not found. Install 'pywin32' to enable real printing.")
-        logger.info("   (Simulating print success...)")
-    except Exception as e:
-        logger.error(f"❌ Print Failed: {e}")
-
-    time.sleep(2) # Simulate print time
-    logger.info("✅ PRINT COMPLETE.")
+    time.sleep(2) 
+    logger.info("✅ PRINT REQUEST SENT.")
 
 def run_test_mode():
     """

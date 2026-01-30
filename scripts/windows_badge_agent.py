@@ -264,7 +264,8 @@ def print_badge(user_data):
 
 def run_test_mode():
     """
-    Bypasses SQS. Creates a random test user in Brivo, then prints.
+    Bypasses SQS. Generates a dummy user object and prints immediately.
+    Note: Does NOT create user in Brivo (API method deprecated).
     """
     logger.info("🧪 STARTING TEST MODE")
     
@@ -281,16 +282,8 @@ def run_test_mode():
     logger.info(f"   Generated Test User: {test_user['email']}")
     logger.info(f"   Using Photo URL: {test_user['photo_url']}")
     
-    # 2. Create in Brivo
-    client = BrivoClient()
-    logger.info("   Connecting to Brivo...")
-    if client.create_user(test_user["first_name"], test_user["last_name"], test_user["email"]):
-        logger.info("   ✅ Brivo User Created.")
-    else:
-        logger.error("   ❌ Failed to create Brivo user. Aborting.")
-        return
-
-    # 3. Print
+    # 2. Print
+    logger.info("   Skipping Brivo User Creation (SCIM Only). Proceeding to Print...")
     print_badge(test_user)
     logger.info("🧪 TEST MODE COMPLETE")
 

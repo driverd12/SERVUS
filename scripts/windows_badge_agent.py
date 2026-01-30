@@ -36,8 +36,57 @@ def print_badge(user_data):
     email = user_data.get("email")
     
     logger.info(f"🖨️  PRINTING BADGE for: {first} {last} ({email})")
-    logger.info("   ... Rendering Image ...")
-    logger.info("   ... Sending to Printer ...")
+    
+    # --- REAL PRINTING LOGIC ---
+    try:
+        import win32print
+        import win32ui
+        from PIL import Image, ImageWin
+        
+        # Printer Name (Must match exactly what is in Windows Settings)
+        printer_name = "CX-D80 U1"
+        
+        # 1. Create a Device Context (DC) for the printer
+        hDC = win32ui.CreateDC()
+        hDC.CreatePrinterDC(printer_name)
+        
+        # 2. Start Print Job
+        hDC.StartDoc(f"Badge_{first}_{last}")
+        hDC.StartPage()
+        
+        # 3. Draw Text (Name)
+        # Coordinates are tricky and depend on DPI. These are placeholders.
+        # You might need to adjust X, Y based on 300dpi or 600dpi.
+        font = win32ui.CreateFont({
+            "name": "Arial",
+            "height": 100, # Size
+            "weight": 700, # Bold
+        })
+        hDC.SelectObject(font)
+        hDC.TextOut(100, 100, f"{first} {last}")
+        
+        # 4. Draw Image (Photo)
+        # In a real app, you'd download the photo from Okta/URL first.
+        # For now, we assume a placeholder or skip if no photo URL provided.
+        # photo_path = "path/to/downloaded/photo.jpg"
+        # if os.path.exists(photo_path):
+        #     bmp = Image.open(photo_path)
+        #     dib = ImageWin.Dib(bmp)
+        #     dib.draw(hDC.GetHandleOutput(), (50, 200, 300, 500)) # (x1, y1, x2, y2)
+
+        # 5. Finish
+        hDC.EndPage()
+        hDC.EndDoc()
+        hDC.DeleteDC()
+        
+        logger.info("✅ Sent to Windows Spooler.")
+        
+    except ImportError:
+        logger.warning("⚠️  win32print/win32ui not found. Install 'pywin32' to enable real printing.")
+        logger.info("   (Simulating print success...)")
+    except Exception as e:
+        logger.error(f"❌ Print Failed: {e}")
+
     time.sleep(2) # Simulate print time
     logger.info("✅ PRINT COMPLETE.")
 

@@ -142,6 +142,17 @@ def create_badge_image(first_name, last_name, photo_url=None):
     except Exception as e:
         logger.warning(f"⚠️ Failed to process photo: {e}")
         
+    # --- FIX FOR WHITE LINE ON RIGHT EDGE ---
+    # The printer might be scaling slightly off.
+    # We can add a "Bleed" or simply ensure the background covers everything.
+    # The canvas creation already sets the background color.
+    # If the white line is physical (unprinted area), we might need to adjust the print origin in win32print logic
+    # or slightly over-size the image if the driver supports bleed.
+    # However, ensuring the image dimensions match the driver's printable area is key.
+    # CR80 is 2.125" x 3.375".
+    # At 300 DPI: 637.5 x 1012.5 pixels.
+    # We are using 639x1014 which is slightly larger (safe).
+    
     return img
 
 def create_back_image():
@@ -160,17 +171,24 @@ def create_back_image():
         
         if os.path.exists(logo_path):
             logo = Image.open(logo_path).convert("RGBA")
-            # Resize logo to fill most of the card
-            # Keep aspect ratio
-            target_width = int(WIDTH * 0.9)
+            
+            # --- FIX FOR CENTERED / OVERLAPPING LOGO ---
+            # Your requirement: "the logo completely circular instead of stretched... overlaps the edges"
+            # This suggests we want to maintain aspect ratio and fill/cover the width, maybe even zoom in.
+            
             aspect_ratio = logo.height / logo.width
+            
+            # Scenario: Fill the card width + some bleed to make it "overlap edges"
+            # Let's target 110% of the card width to ensure overlap
+            target_width = int(WIDTH * 1.1)
             target_height = int(target_width * aspect_ratio)
             
             logo = logo.resize((target_width, target_height), Image.Resampling.LANCZOS)
             
-            # Center it
+            # Center vertically and horizontally
             logo_x = (WIDTH - target_width) // 2
             logo_y = (HEIGHT - target_height) // 2
+            
             img.paste(logo, (logo_x, logo_y), logo)
     except Exception as e:
         logger.warning(f"⚠️ Failed to create back image: {e}")

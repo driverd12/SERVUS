@@ -11,7 +11,13 @@ def get_sqs_client():
     
     # Assumes AWS credentials are in env vars or ~/.aws/credentials
     if endpoint_url:
-        return boto3.client("sqs", region_name=region, endpoint_url=endpoint_url)
+        # LocalStack requires dummy creds to stop boto3 from searching for real ones
+        return boto3.client("sqs", 
+            region_name=region, 
+            endpoint_url=endpoint_url,
+            aws_access_key_id="test",
+            aws_secret_access_key="test"
+        )
     else:
         return boto3.client("sqs", region_name=region)
 

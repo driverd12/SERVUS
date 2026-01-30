@@ -65,11 +65,18 @@ def create_badge_image(first_name, last_name, photo_url=None):
         # Use a bold sans-serif font. Arial Bold is standard on Windows.
         font_size = 70
         try:
+            # Try to load Arial Bold
             font = ImageFont.truetype("arialbd.ttf", font_size)
         except IOError:
-            font = ImageFont.load_default() # Fallback
+            try:
+                # Try standard Arial if bold fails
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except IOError:
+                # Fallback to default
+                font = ImageFont.load_default() 
             
-        text = f"<{first_name}>" # Using format from screenshot
+        # Format text to match template: <First Name>
+        text = f"<{first_name}>" 
         
         # Calculate text size to center it
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -85,18 +92,38 @@ def create_badge_image(first_name, last_name, photo_url=None):
     try:
         photo = None
         if photo_url:
-            response = requests.get(photo_url)
-            if response.status_code == 200:
-                photo = Image.open(BytesIO(response.content)).convert("RGBA")
+            try:
+                response = requests.get(photo_url, timeout=10)
+                if response.status_code == 200:
+                    photo = Image.open(BytesIO(response.content)).convert("RGBA")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to download photo: {e}")
         
         # Fallback placeholder if no photo
         if not photo:
             # Grey circle placeholder
             photo = Image.new('RGBA', (400, 400), color="#7F7F7F")
 
-        # Resize photo to fit circle area
+        # Resize photo to fit circle area (450px)
         circle_size = 450
-        photo = photo.resize((circle_size, circle_size), Image.Resampling.LANCZOS)
+        
+        # Scale photo to cover circle_size (maintain aspect ratio)
+        photo_aspect = photo.width / photo.height
+        if photo.width < photo.height:
+            new_width = circle_size
+            new_height = int(circle_size / photo_aspect)
+        else:
+            new_height = circle_size
+            new_width = int(circle_size * photo_aspect)
+            
+        photo = photo.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Crop center
+        left = (new_width - circle_size) / 2
+        top = (new_height - circle_size) / 2
+        right = (new_width + circle_size) / 2
+        bottom = (new_height + circle_size) / 2
+        photo = photo.crop((left, top, right, bottom))
         
         # Create circular mask
         mask = Image.new('L', (circle_size, circle_size), 0)
@@ -117,6 +144,39 @@ def create_badge_image(first_name, last_name, photo_url=None):
         
     return img
 
+def create_back_image():
+    """Generates the back of the badge (White with Black Logo)"""
+    # Config - CR80 @ 300 DPI
+    WIDTH, HEIGHT = 639, 1014 
+    BG_COLOR = "white"
+    
+    # Canvas
+    img = Image.new('RGB', (WIDTH, HEIGHT), color=BG_COLOR)
+    
+    try:
+        # Load back logo
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.join(script_dir, "assets", "logo_back.png")
+        
+        if os.path.exists(logo_path):
+            logo = Image.open(logo_path).convert("RGBA")
+            # Resize logo to fill most of the card
+            # Keep aspect ratio
+            target_width = int(WIDTH * 0.9)
+            aspect_ratio = logo.height / logo.width
+            target_height = int(target_width * aspect_ratio)
+            
+            logo = logo.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            
+            # Center it
+            logo_x = (WIDTH - target_width) // 2
+            logo_y = (HEIGHT - target_height) // 2
+            img.paste(logo, (logo_x, logo_y), logo)
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to create back image: {e}")
+        
+    return img
+
 def print_badge(user_data):
     """
     Generates the badge image locally and sends it to the Windows Printer.
@@ -124,18 +184,21 @@ def print_badge(user_data):
     first = user_data.get("first_name")
     last = user_data.get("last_name")
     email = user_data.get("email")
-    photo_url = user_data.get("photo_url") # Ensure this is passed in payload
+    photo_url = user_data.get("photo_url") 
     
     logger.info(f"🖨️  Processing Badge for: {first} {last}")
     
     try:
-        # 1. Generate Image
-        badge_img = create_badge_image(first, last, photo_url)
+        # 1. Generate Images
+        front_img = create_badge_image(first, last, photo_url)
+        back_img = create_back_image()
         
-        # Save temp file for debugging/printing
-        temp_filename = f"badge_{first}_{last}.png"
-        badge_img.save(temp_filename)
-        logger.info(f"   Generated badge image: {temp_filename}")
+        # Save temp files
+        temp_front = f"badge_front_{first}.png"
+        temp_back = f"badge_back_{first}.png"
+        front_img.save(temp_front)
+        back_img.save(temp_back)
+        logger.info(f"   Generated images: {temp_front}, {temp_back}")
 
         # 2. Print using Windows API
         import win32print
@@ -144,33 +207,34 @@ def print_badge(user_data):
 
         printer_name = "CX-D80 U1"
         
+        # Create DC
         hDC = win32ui.CreateDC()
         hDC.CreatePrinterDC(printer_name)
         
-        # Calculate scaling to fit page (CR80)
-        # For simplicity, we assume the printer driver is set to CR80 paper size
-        # and we just draw the image to fill the DC.
-        
         hDC.StartDoc(f"Badge_{first}_{last}")
+        
+        # --- FRONT SIDE ---
         hDC.StartPage()
-
-        dib = ImageWin.Dib(badge_img)
-        
-        # Get printable area
-        # horz_res = hDC.GetDeviceCaps(110) # HORZRES
-        # vert_res = hDC.GetDeviceCaps(111) # VERTRES
-        
-        # Draw image (0,0 to width,height)
-        dib.draw(hDC.GetHandleOutput(), (0, 0, badge_img.width, badge_img.height))
-
+        dib_front = ImageWin.Dib(front_img)
+        dib_front.draw(hDC.GetHandleOutput(), (0, 0, front_img.width, front_img.height))
         hDC.EndPage()
+        
+        # --- BACK SIDE ---
+        # Note: Duplex printing depends on driver settings. 
+        # Typically sending a 2nd page triggers the back side if Duplex is enabled in driver.
+        hDC.StartPage()
+        dib_back = ImageWin.Dib(back_img)
+        dib_back.draw(hDC.GetHandleOutput(), (0, 0, back_img.width, back_img.height))
+        hDC.EndPage()
+
         hDC.EndDoc()
         hDC.DeleteDC()
         
-        logger.info("✅ Sent to Windows Spooler.")
+        logger.info("✅ Sent to Windows Spooler (Front & Back).")
         
         # Cleanup
-        # os.remove(temp_filename) 
+        if os.path.exists(temp_front): os.remove(temp_front)
+        if os.path.exists(temp_back): os.remove(temp_back)
 
     except ImportError:
         logger.warning("⚠️  win32print/win32ui not found. Install 'pywin32' to enable real printing.")

@@ -273,10 +273,13 @@ def run_test_mode():
     test_user = {
         "first_name": "Test",
         "last_name": f"BadgeUser_{rand_id}",
-        "email": f"test.badge.{rand_id}@boom.aero"
+        "email": f"test.badge.{rand_id}@boom.aero",
+        # CAT IMAGE URL (Requires python -m http.server 8000 running on Mac in assets folder)
+        "photo_url": "http://10.1.2.76:8000/image-c09db0fa-18b9-48c2-8016-b18c12162b94.png"
     }
     
     logger.info(f"   Generated Test User: {test_user['email']}")
+    logger.info(f"   Using Photo URL: {test_user['photo_url']}")
     
     # 2. Create in Brivo
     client = BrivoClient()

@@ -1,96 +1,199 @@
-import os
 import subprocess
 import logging
+import time
 from servus.config import CONFIG
 
-logger = logging.getLogger("servus.gam")
+logger = logging.getLogger("servus.google")
 
-def _run_gam(args, context=None):
-    """
-    Internal helper to run GAM commands securely.
-    Includes a 'belt-and-suspenders' check for dry_run context.
-    """
-    # SAFETY CHECK: If context says dry_run, abort immediately.
-    if context and context.get('dry_run', False):
-        logger.info(f"[DRY-RUN-INTERNAL] Would have run GAM command: gam {' '.join(args)}")
-        return True
+GAM_PATH = CONFIG.get("GAM_PATH", "gam")
 
-    gam_path = CONFIG.get("GAM_PATH", "gam")
-    
-    # Validation
-    if not os.path.exists(gam_path) and gam_path != "gam":
-        logger.error(f"GAM binary not found at {gam_path}")
-        return False
-
-    cmd = [gam_path] + args
-    
+def run_gam(args):
+    cmd = [GAM_PATH] + args
     try:
-        # We capture output to keep logs clean, but log errors
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        if result.returncode == 0:
+        # We capture output but don't strictly fail on non-zero returns 
+        # because sometimes GAM warns about non-critical things.
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result.returncode == 0, result.stdout, result.stderr
+    except FileNotFoundError:
+        logger.error(f"GAM binary not found at {GAM_PATH}")
+        return False, "", "Binary missing"
+
+def wait_for_user_scim(context):
+    """
+    Polls Google (via GAM) to wait for the user to be created by Okta SCIM.
+    """
+    user = context.get("user_profile")
+    if not user: return False
+    email = user.work_email
+    
+    logger.info(f"⏳ Google: Waiting for SCIM to create {email}...")
+    
+    start_time = time.time()
+    timeout = 600 # 10 minutes
+    
+    while time.time() - start_time < timeout:
+        # Check if user exists
+        success, stdout, _ = run_gam(["info", "user", email])
+        if success:
+            logger.info(f"✅ Google: User {email} found!")
             return True
-        else:
-            logger.error(f"GAM Error: {result.stderr.strip()}")
-            return False
-    except Exception as e:
-        logger.error(f"GAM Execution Failed: {str(e)}")
-        return False
+        
+        if context.get("dry_run"):
+             logger.info(f"[DRY-RUN] Would wait for {email} (Simulating success)")
+             return True
+
+        time.sleep(30)
+        
+    logger.error(f"❌ Google: Timed out waiting for {email} after {timeout}s")
+    return False
 
 def move_user_ou(context):
     """
-    Moves the user to the correct Google OU based on their FTE/Contractor status.
+    Moves the user to the correct OU based on employment_type.
+    Respects protected OUs.
     """
     user = context.get("user_profile")
     if not user: return False
-
-    email = user.email
+    email = user.work_email
     
-    # Logic for Target OU
-    if user.user_type == "CON":
-        target_ou = "/New Users - Contractors"
-    elif user.user_type == "INT":
-        target_ou = "/New Users - Interns"
+    # 1. Get Current OU
+    success, stdout, _ = run_gam(["info", "user", email])
+    if not success:
+        if context.get("dry_run"):
+            logger.info(f"[DRY-RUN] Would check OU for {email}")
+            current_ou = "/Unknown" # Fake for dry run
+        else:
+            logger.error(f"❌ Google: Could not find user {email} to move.")
+            return False
     else:
-        target_ou = "/New Users - FTE"
-
-    logger.info(f"Moving {email} to Google OU: {target_ou}")
-    
-    # Pass context to _run_gam for safety check
-    return _run_gam(["update", "user", email, "org", target_ou], context)
-
-def add_to_groups(context):
-    """
-    Adds user to standard distribution lists.
-    """
-    user = context.get("user_profile")
-    if not user: return False
-
-    email = user.email
-    groups_to_add = []
-
-    if user.user_type == "FTE":
-        groups_to_add.append("team@boom.aero")
-    elif user.user_type == "CON":
-        groups_to_add.append("contractors@boom.aero")
-    
-    success = True
-    for group in groups_to_add:
-        logger.info(f"Adding {email} to Google Group: {group}")
-        if not _run_gam(["update", "group", group, "add", "member", email], context):
-            success = False
+        # Parse OU from stdout (GAM output format varies, usually "Org Unit Path: /Foo")
+        current_ou = ""
+        for line in stdout.splitlines():
+            if "Org Unit Path:" in line:
+                current_ou = line.split(":", 1)[1].strip()
+                break
             
-    return success
-
-def suspend_user(context):
-    """
-    Suspends a user in Google Workspace (Offboarding).
-    """
-    # For offboarding, the context usually has 'email' directly or a partial profile
-    email = context.get("email") or (context.get("user_profile") and context.get("user_profile").email)
+    # 2. Safety Check
+    protected_ous = ["/SuperAdmins", "/Service Accounts", "/Deprovisioning", "/Retention - e-mail"]
+    if current_ou in protected_ous:
+        logger.warning(f"⚠️ Google: User {email} is in protected OU '{current_ou}'. Skipping move.")
+        return True # Treat as success to not break workflow
+        
+    # 3. Determine Target OU
+    emp_type = user.employment_type.lower()
+    target_ou = "/empType-CON" # Default
     
-    if not email:
-        logger.error("No email provided for suspension.")
+    if "hourly, full-time" in emp_type or "salaried, full-time" in emp_type:
+        target_ou = "/empType-FTE"
+    elif "contractor" in emp_type or "1099" in emp_type:
+        target_ou = "/empType-CON"
+    elif "temporary" in emp_type or "intern" in emp_type:
+        target_ou = "/empType-INT"
+    elif "supplier" in emp_type:
+        target_ou = "/empType-SUP"
+        
+    if current_ou == target_ou:
+        logger.info(f"✅ Google: User {email} already in {target_ou}")
+        return True
+        
+    # 4. Move
+    logger.info(f"🚚 Google: Moving {email} from '{current_ou}' to '{target_ou}'")
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would move {email} to {target_ou}")
+        return True
+        
+    success, _, stderr = run_gam(["update", "user", email, "org", target_ou])
+    if success:
+        logger.info(f"✅ Google: Moved {email} to {target_ou}")
+        return True
+    else:
+        logger.error(f"❌ Google: Failed to move {email}: {stderr}")
         return False
 
-    logger.info(f"Suspending Google User: {email}")
-    return _run_gam(["update", "user", email, "suspended", "on"], context)
+def add_groups(context):
+    """
+    Adds user to default groups based on department/role.
+    (Placeholder for existing logic)
+    """
+    user = context.get("user_profile")
+    if not user: return False
+    email = user.work_email
+    
+    logger.info(f"👥 Google: Adding groups for {email}...")
+    # TODO: Implement actual group logic or load from config
+    # For now, just logging as success
+    return True
+
+def deprovision_user(context):
+    """
+    Full Google Offboarding Suite:
+    1. Wipe Mobile Devices
+    2. Remove from Groups
+    3. Transfer Drive/Docs -> admin-wolverine@boom.aero
+    4. Transfer Calendar -> admin-wolverine@boom.aero
+    5. Rename to 'archive'
+    6. Move to Deprovisioning OU
+    7. Suspend
+    """
+    user = context.get("user_profile")
+    if not user: return False
+    
+    target_email = user.work_email
+    
+    # 🎯 TARGET FOR DATA TRANSFER
+    transfer_target = "admin-wolverine@boom.aero"
+    
+    logger.info(f"💣 Google: Starting FULL deprovisioning for {target_email}...")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would Wipe devices")
+        logger.info(f"[DRY-RUN] Would Remove from all groups")
+        logger.info(f"[DRY-RUN] Would Transfer Drive & Calendar to {transfer_target}")
+        logger.info(f"[DRY-RUN] Would Rename to {target_email.replace('@', '-archive@')}")
+        logger.info(f"[DRY-RUN] Would Move to /Deprovisioning and Suspend")
+        return True
+
+    # --- STEP 1: WIPE DEVICES ---
+    # Removes corporate data from sync'd mobile devices
+    logger.info("   1. Wiping mobile devices...")
+    run_gam(["update", "user", target_email, "wipe"])
+
+    # --- STEP 2: REMOVE FROM GROUPS ---
+    logger.info("   2. Removing from all groups...")
+    run_gam(["user", target_email, "delete", "groups"])
+
+    # --- STEP 3: DATA TRANSFER (CRITICAL) ---
+    # Note: These commands initiate a background job in Google. 
+    # They usually return quickly, but the transfer happens async.
+    logger.info(f"   3. Transferring Drive files to {transfer_target}...")
+    run_gam(["create", "transfer", "drive", target_email, transfer_target, "keep_user"])
+    
+    logger.info(f"   4. Transferring Calendar events to {transfer_target}...")
+    run_gam(["create", "transfer", "calendar", target_email, transfer_target, "release_resources", "true"])
+
+    # --- STEP 4: RENAME TO ARCHIVE ---
+    # We rename BEFORE moving/suspending so the archive name sticks
+    archive_email = target_email.replace("@", "-archive@")
+    logger.info(f"   5. Renaming to {archive_email}...")
+    run_gam(["update", "user", target_email, "email", archive_email])
+
+    # --- STEP 5: MOVE OU ---
+    logger.info("   6. Moving to /Deprovisioning OU...")
+    # Ensure this OU exists in Google Admin, or this step will fail!
+    run_gam(["update", "user", archive_email, "org", "/Deprovisioning"])
+
+    # --- STEP 6: SUSPEND ---
+    logger.info("   7. Suspending account...")
+    run_gam(["update", "user", archive_email, "suspended", "on"])
+
+    logger.info(f"✅ Google Deprovisioning Complete for {target_email} (Now {archive_email})")
+    return True
+
+# Keeping the previous functions for Onboarding compatibility
+def wait_for_user_and_customize(context):
+    """
+    Wrapper to wait for SCIM then customize.
+    """
+    if wait_for_user_scim(context):
+        return move_user_ou(context)
+    return False

@@ -129,3 +129,43 @@ def assign_custom_groups(context):
             client.add_user_to_group(user_id, contractor_group_id)
 
     return True
+
+def deactivate_user(context):
+    """
+    Deactivates a user in Okta.
+    """
+    user_profile = context.get("user_profile")
+    if not user_profile: return False
+    
+    client = OktaClient()
+    email = user_profile.work_email
+    
+    logger.info(f"🚫 Okta: Deactivating {email}...")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would call POST /users/{email}/lifecycle/deactivate")
+        return True
+
+    # 1. Get User ID
+    okta_user = client.get_user(email)
+    if not okta_user:
+        logger.warning(f"⚠️ Okta user {email} not found. Skipping deactivation.")
+        return False
+        
+    user_id = okta_user.get("id")
+    
+    # 2. Deactivate
+    # Note: Okta requires sending a POST to this endpoint
+    url = f"{client.base_url}/users/{user_id}/lifecycle/deactivate"
+    
+    try:
+        resp = requests.post(url, headers=client.headers)
+        if resp.status_code == 200 or resp.status_code == 204:
+            logger.info(f"✅ Okta User {email} Deactivated.")
+            return True
+        else:
+            logger.error(f"❌ Okta Deactivation Failed: {resp.text}")
+            return False
+    except Exception as e:
+        logger.error(f"❌ Okta Connection Error: {e}")
+        return False

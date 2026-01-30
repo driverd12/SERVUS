@@ -2,6 +2,7 @@ import logging
 import requests
 import yaml
 import os
+import time
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.slack")
@@ -22,7 +23,7 @@ def _lookup_user_by_email(email):
         if data.get("ok"):
             return data["user"]["id"]
         else:
-            logger.warning(f"Slack Lookup Failed for {email}: {data.get('error')}")
+            # Don't log warning here, let the caller handle it (e.g. in wait loop)
             return None
     except Exception as e:
         logger.error(f"Slack Connection Error: {e}")
@@ -31,14 +32,35 @@ def _lookup_user_by_email(email):
 def add_to_channels(context):
     """
     Adds the user to default and department-specific Slack channels.
+    Waits for user to exist (SCIM sync).
     """
     user = context.get("user_profile")
     if not user: return False
 
-    # 1. Get Slack User ID
-    user_id = _lookup_user_by_email(user.email)
+    # 1. Get Slack User ID with Wait Loop
+    user_id = None
+    email = user.email
+    
+    logger.info(f"⏳ Slack: Waiting for user {email} to exist...")
+    
+    start_time = time.time()
+    timeout = 300 # 5 minutes
+    
+    while time.time() - start_time < timeout:
+        user_id = _lookup_user_by_email(email)
+        if user_id:
+            logger.info(f"✅ Slack: User found ({user_id})")
+            break
+        
+        if context.get("dry_run"):
+             logger.info(f"[DRY-RUN] Would wait for Slack user {email}")
+             user_id = "U_DRY_RUN"
+             break
+             
+        time.sleep(30)
+        
     if not user_id:
-        logger.warning(f"Skipping channel add: Could not find Slack user for {user.email}. (SCIM sync delay?)")
+        logger.warning(f"Skipping channel add: Could not find Slack user for {email} after {timeout}s. (SCIM sync delay?)")
         return False
 
     # 2. Load Channel Rules
@@ -61,6 +83,10 @@ def add_to_channels(context):
         target_channels.update(config["departments"][dept_key])
     
     logger.info(f"Adding {user.email} to {len(target_channels)} Slack channels...")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would add to: {target_channels}")
+        return True
 
     # 4. Invite User
     url = "https://slack.com/api/conversations.invite"

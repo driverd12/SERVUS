@@ -1,40 +1,22 @@
-name: "SERVUS US Offboarding v1"
-description: "Standard US employee/contractor termination flow"
-
+name: "SERVUS Supplier Offboarding"
+description: "Disable AD -> Deactivate Okta -> Wipe Google -> Kill Badge"
 steps:
-  # --- PRE-FLIGHT ---
-  - name: validate_target
-    description: "Validate target email exists"
-    type: action
-    action: builtin.validate_target_email
-    verify: auto
-
-  # --- AD DISABLE ---
-  - name: ad_disable
-    description: "AD: Disable account + update description"
+  - id: ad_disable
+    description: "AD: Disable account and move to Disabled OU"
     type: action
     action: ad.disable_user
-    verify: auto
 
-  # --- OKTA DEACTIVATE ---
-  - name: okta_deactivate
-    description: "Okta: Deactivate user (Cascades to Slack/Zoom via SCIM)"
+  - id: okta_kill
+    description: "Okta: Deactivate account (kills Zoom/Linear if SCIM works)"
     type: action
     action: okta.deactivate_user
-    verify: auto
 
-  # --- GOOGLE SUSPEND ---
-  - name: google_suspend
-    description: "Google: Suspend User via GAM"
+  - id: google_nuke
+    description: "Google: Suspend, Wipe Device, Move OU"
     type: action
-    action: google_gam.suspend_user
-    verify: auto
+    action: google_gam.deprovision_user
 
-  # --- MANUAL VERIFICATION ---
-  - name: verify_slack
-    description: "Verify Slack access is revoked (should be automatic via Okta)"
-    type: manual
-
-  - name: recover_assets
-    description: "Recover Laptop/Badge/Peripherals"
-    type: manual
+  - id: brivo_kill
+    description: "Brivo: Suspend badge access"
+    type: action
+    action: brivo.suspend_user

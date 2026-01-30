@@ -9,7 +9,7 @@ class BrivoClient:
         self.api_key = CONFIG.get("BRIVO_API_KEY")
         self.username = CONFIG.get("BRIVO_USERNAME")
         self.password = CONFIG.get("BRIVO_PASSWORD")
-        self.base_url = "https://api.brivo.com/v1/api"  # Verify exact endpoint in docs
+        self.base_url = "https://api.brivo.com/v1/api"
         self.token = None
 
     def login(self):
@@ -33,7 +33,7 @@ class BrivoClient:
         try:
             resp = requests.post(url, json=data, headers=headers)
             if resp.status_code == 200:
-                self.token = resp.json().get("access_token") # Or 'token', depends on exact API version
+                self.token = resp.json().get("access_token")
                 logger.info("✅ Brivo Login Successful.")
                 return True
             else:
@@ -51,7 +51,6 @@ class BrivoClient:
             return None
 
         # Searching usually requires a filter query
-        # This is a guess at the endpoint standard; Brivo docs vary by version.
         url = f"{self.base_url}/users?filter=email eq '{email}'"
         headers = {
             "api-key": self.api_key,
@@ -91,7 +90,7 @@ class BrivoClient:
             "firstName": first,
             "lastName": last,
             "email": email,
-            "externalId": email  # Good practice to link to IDP
+            "externalId": email
         }
 
         try:
@@ -106,10 +105,58 @@ class BrivoClient:
             logger.error(f"❌ Brivo API Error: {e}")
             return False
 
-# Quick helper function for the workflow to call directly
+# --- WORKFLOW ACTIONS ---
+
 def provision_access(context):
     user = context.get("user_profile")
     if not user: return False
     
     client = BrivoClient()
     return client.create_user(user.first_name, user.last_name, user.work_email)
+
+def suspend_user(context):
+    """
+    Suspends a user in Brivo (Revokes badge access).
+    """
+    user_profile = context.get("user_profile")
+    if not user_profile: return False
+    
+    client = BrivoClient()
+    
+    logger.info(f"🚫 Brivo: Suspending badge for {user_profile.work_email}...")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would find Brivo user and set suspended=True")
+        return True
+
+    # 1. Login & Find
+    if not client.login():
+        return False
+        
+    brivo_user = client.find_user(user_profile.work_email)
+    if not brivo_user:
+        logger.warning(f"⚠️ Brivo user not found. Skipping suspension.")
+        return False
+        
+    user_id = brivo_user.get("id")
+    
+    # 2. Suspend
+    url = f"{client.base_url}/users/{user_id}"
+    headers = {
+        "api-key": client.api_key,
+        "Authorization": f"Bearer {client.token}",
+        "Content-Type": "application/json"
+    }
+    data = {"suspended": True}
+    
+    try:
+        resp = requests.put(url, json=data, headers=headers)
+        if resp.status_code in [200, 204]:
+            logger.info(f"✅ Brivo User Suspended.")
+            return True
+        else:
+            logger.error(f"❌ Brivo Suspend Failed: {resp.text}")
+            return False
+    except Exception as e:
+        logger.error(f"❌ Brivo Connection Error: {e}")
+        return False

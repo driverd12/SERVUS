@@ -7,40 +7,43 @@ steps:
     type: action
     action: builtin.validate_profile
 
-  # 2. WAIT for Identity (Replaces AD Creation)
-  # In this mode, Rippling sends user to Okta. We just wait for them to show up.
-  - id: wait_for_okta
-    description: "Poll Okta: Wait for user to sync from Rippling"
+  # 2. AD Wait (Passive Check)
+  - id: ad_wait
+    description: "AD: Check if user exists (synced from Okta)"
     type: action
-    action: okta.find_user
+    action: ad.validate_user_exists
 
-  # 3. Trigger Downstream (If manual push is needed)
-  # Sometimes Okta needs a nudge to push to AD/Google immediately
-  # (Optional: keep if you want to force immediate syncs)
-  # - id: okta_push
-  #   description: "Trigger Okta push groups/updates"
-  #   type: action
-  #   action: okta.trigger_push
-
-  # 4. SaaS Customization (Google)
-  - id: google_wait_and_customize
-    description: "Google: Wait for SCIM & Move OU"
+  # 3. Google Wait
+  - id: google_wait
+    description: "Google: Wait for SCIM to create user"
     type: action
-    action: google_gam.wait_for_user_and_customize  # <--- We need to combine logic here or keep separate steps
+    action: google_gam.wait_for_user_scim
 
-  # 5. Google Customization (Separate Step)
-  - id: google_customize
-    description: "Google: Apply Groups & Aliases"
+  # 4. Google Customize (OU Move)
+  - id: google_move_ou
+    description: "Google: Move to correct OU"
     type: action
     action: google_gam.move_user_ou
 
-  # 6. Device Check (Apple)
+  # 5. Google Groups
+  - id: google_groups
+    description: "Google: Add to groups"
+    type: action
+    action: google_gam.add_groups
+
+  # 6. Slack Customize
+  - id: slack_customize
+    description: "Slack: Add to channels"
+    type: action
+    action: slack.add_to_channels
+
+  # 7. Device Check (Apple)
   - id: check_device
     description: "Apple: Check device assignment in ABM"
     type: action
     action: apple.check_device_assignment
 
-  # 7. Physical Access (Brivo)
+  # 8. Physical Access (Brivo)
   - id: physical_access
     description: "Brivo: Create badge profile"
     type: action

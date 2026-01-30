@@ -1,6 +1,7 @@
 import requests
 import logging
 from servus.config import CONFIG
+from servus.integrations import badge_queue
 
 logger = logging.getLogger("servus.brivo")
 
@@ -112,7 +113,21 @@ def provision_access(context):
     if not user: return False
     
     client = BrivoClient()
-    return client.create_user(user.first_name, user.last_name, user.work_email)
+    success = client.create_user(user.first_name, user.last_name, user.work_email)
+    
+    if success:
+        # Trigger Remote Print Job
+        logger.info("🖨️  Queueing Badge Print Job...")
+        if context.get("dry_run"):
+            logger.info("[DRY-RUN] Would send print job to SQS.")
+        else:
+            badge_queue.send_print_job({
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.work_email
+            })
+            
+    return success
 
 def suspend_user(context):
     """

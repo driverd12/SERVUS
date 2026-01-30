@@ -36,6 +36,11 @@ CONFIG = {
     "BRIVO_API_KEY": os.getenv("SERVUS_BRIVO_API_KEY"),
     "BRIVO_USERNAME": os.getenv("SERVUS_BRIVO_USERNAME"),
     "BRIVO_PASSWORD": os.getenv("SERVUS_BRIVO_PASSWORD"),
+
+    # AWS SQS (Badge Printing)
+    "SQS_BADGE_QUEUE_URL": os.getenv("SERVUS_SQS_BADGE_QUEUE_URL"),
+    "AWS_REGION": os.getenv("SERVUS_AWS_REGION", "us-east-1"),
+    "SQS_ENDPOINT_URL": os.getenv("SERVUS_SQS_ENDPOINT_URL"),
 }
 
 def load_config():

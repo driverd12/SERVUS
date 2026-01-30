@@ -1,5 +1,6 @@
 import logging
 import winrm
+import time
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.ad")
@@ -26,7 +27,7 @@ def validate_user_exists(context):
     if not user_profile: return False
     
     target_email = user_profile.work_email
-    logger.info(f"🔍 AD: Checking if {target_email} exists...")
+    logger.info(f"⏳ AD: Waiting for sync of {target_email}...")
     
     # Determine expected AD Group
     emp_type_input = user_profile.employment_type.lower()
@@ -42,7 +43,7 @@ def validate_user_exists(context):
         expected_group = "Suppliers"
 
     if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would check AD for {target_email}")
+        logger.info(f"[DRY-RUN] Would wait for AD sync of {target_email}")
         logger.info(f"[DRY-RUN] Would verify membership in '{expected_group}'")
         logger.info(f"[DRY-RUN] Would verify employeeType matches '{user_profile.employment_type}'")
         return True
@@ -50,56 +51,58 @@ def validate_user_exists(context):
     session = get_session()
     if not session: return False
 
-    # Fetch user, memberOf attribute, and employeeType
-    ps_script = f"""
-    try {{
-        $u = Get-ADUser -Identity "{target_email}" -Properties memberOf,employeeType -ErrorAction Stop
-        Write-Output "FOUND"
-        Write-Output "GROUPS:$($u.memberOf -join ';')"
-        Write-Output "EMPTYPE:$($u.employeeType)"
-    }} catch {{
-        Write-Output "NOT_FOUND"
-    }}
-    """
-    
-    try:
-        result = session.run_ps(ps_script)
-        output = result.std_out.decode()
-        
-        if result.status_code == 0 and "FOUND" in output:
-            logger.info(f"✅ AD: User {target_email} found.")
-            
-            # 1. Check Group Membership
-            if f"CN={expected_group}," in output or f"CN={expected_group};" in output:
-                logger.info(f"✅ AD: User is correctly in '{expected_group}'.")
-            else:
-                logger.warning(f"⚠️ AD: User found but MISSING '{expected_group}' group. Check Okta Rules!")
+    start_time = time.time()
+    timeout = 600 # 10 minutes (AD sync can be slow)
 
-            # 2. Check Attribute (employeeType)
-            # Parse employeeType from output
-            found_emp_type = ""
-            for line in output.splitlines():
-                if line.startswith("EMPTYPE:"):
-                    found_emp_type = line.replace("EMPTYPE:", "").strip()
-                    break
+    while time.time() - start_time < timeout:
+        # Fetch user, memberOf attribute, and employeeType
+        ps_script = f"""
+        try {{
+            $u = Get-ADUser -Identity "{target_email}" -Properties memberOf,employeeType -ErrorAction Stop
+            Write-Output "FOUND"
+            Write-Output "GROUPS:$($u.memberOf -join ';')"
+            Write-Output "EMPTYPE:$($u.employeeType)"
+        }} catch {{
+            Write-Output "NOT_FOUND"
+        }}
+        """
+        
+        try:
+            result = session.run_ps(ps_script)
+            output = result.std_out.decode()
             
-            # Case-insensitive check if the input string is contained in the AD attribute (or vice versa)
-            # We check if the KEYWORD (e.g. "Contractor") is present, or strict equality if preferred.
-            # Given the requirement: "AD Attribute employeeType: Must match input"
-            # We'll do a containment check to be safe against minor formatting diffs
-            if user_profile.employment_type.lower() in found_emp_type.lower() or found_emp_type.lower() in user_profile.employment_type.lower():
-                 logger.info(f"✅ AD: Attribute Verified: '{found_emp_type}'")
-            else:
-                 logger.warning(f"⚠️ AD: Attribute Mismatch! Expected '{user_profile.employment_type}', found '{found_emp_type}'. Check Okta Mappings!")
+            if result.status_code == 0 and "FOUND" in output:
+                logger.info(f"✅ AD: User {target_email} found.")
                 
-            return True
-        else:
-            logger.warning(f"⚠️ AD: User {target_email} NOT found. (Okta sync delay?)")
+                # 1. Check Group Membership
+                if f"CN={expected_group}," in output or f"CN={expected_group};" in output:
+                    logger.info(f"✅ AD: User is correctly in '{expected_group}'.")
+                else:
+                    logger.warning(f"⚠️ AD: User found but MISSING '{expected_group}' group. Check Okta Rules!")
+
+                # 2. Check Attribute (employeeType)
+                found_emp_type = ""
+                for line in output.splitlines():
+                    if line.startswith("EMPTYPE:"):
+                        found_emp_type = line.replace("EMPTYPE:", "").strip()
+                        break
+                
+                if user_profile.employment_type.lower() in found_emp_type.lower() or found_emp_type.lower() in user_profile.employment_type.lower():
+                     logger.info(f"✅ AD: Attribute Verified: '{found_emp_type}'")
+                else:
+                     logger.warning(f"⚠️ AD: Attribute Mismatch! Expected '{user_profile.employment_type}', found '{found_emp_type}'. Check Okta Mappings!")
+                    
+                return True
+            else:
+                logger.info(f"   ... Waiting for AD Sync ...")
+                time.sleep(30)
+                
+        except Exception as e:
+            logger.error(f"❌ AD Connection Error: {e}")
             return False
-            
-    except Exception as e:
-        logger.error(f"❌ AD Connection Error: {e}")
-        return False
+
+    logger.error(f"❌ AD: Timed out waiting for {target_email} after {timeout}s")
+    return False
 
 def disable_user(context):
     """

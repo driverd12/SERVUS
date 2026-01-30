@@ -76,12 +76,17 @@ def run_daemon_mode():
     """
     queue_url = CONFIG.get("SQS_BADGE_QUEUE_URL")
     region = CONFIG.get("AWS_REGION", "us-east-1")
+    endpoint_url = CONFIG.get("SQS_ENDPOINT_URL")
     
     if not queue_url:
         logger.error("❌ SQS_BADGE_QUEUE_URL not set in .env")
         return
 
-    sqs = boto3.client("sqs", region_name=region)
+    if endpoint_url:
+        sqs = boto3.client("sqs", region_name=region, endpoint_url=endpoint_url)
+    else:
+        sqs = boto3.client("sqs", region_name=region)
+        
     logger.info(f"📡 Badge Agent Listening on {queue_url}...")
 
     while True:

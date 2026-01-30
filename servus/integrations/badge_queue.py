@@ -7,8 +7,13 @@ logger = logging.getLogger("servus.badge_queue")
 
 def get_sqs_client():
     region = CONFIG.get("AWS_REGION", "us-east-1")
+    endpoint_url = CONFIG.get("SQS_ENDPOINT_URL") # Optional: For LocalStack
+    
     # Assumes AWS credentials are in env vars or ~/.aws/credentials
-    return boto3.client("sqs", region_name=region)
+    if endpoint_url:
+        return boto3.client("sqs", region_name=region, endpoint_url=endpoint_url)
+    else:
+        return boto3.client("sqs", region_name=region)
 
 def send_print_job(user_data):
     """

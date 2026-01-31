@@ -31,7 +31,8 @@ from io import BytesIO
 
 def create_badge_image(first_name, last_name, photo_url=None):
     # Config - CR80 @ 300 DPI (approx 639x1014 px)
-    WIDTH, HEIGHT = 639, 1014 
+    # INCREASED SIZE FOR BLEED: 670x1050 (Adds ~30-40px padding)
+    WIDTH, HEIGHT = 670, 1050 
     BG_COLOR = "#2C2C2C" # Dark Grey from template
     TEXT_COLOR = "white"
     
@@ -105,20 +106,25 @@ def create_badge_image(first_name, last_name, photo_url=None):
             photo = Image.new('RGBA', (400, 400), color="#7F7F7F")
 
         # Resize photo to fit circle area (450px)
-        circle_size = 450
+        # REDUCED SIZE: 390px (approx 0.5cm smaller diameter at 300 DPI)
+        circle_size = 390
         
         # Scale photo to cover circle_size (maintain aspect ratio)
         photo_aspect = photo.width / photo.height
+        
+        # FIX: Ensure photo is slightly LARGER than circle_size to avoid white edges (zoom/bleed)
+        target_size = circle_size + 20 # Add 20px buffer
+        
         if photo.width < photo.height:
-            new_width = circle_size
-            new_height = int(circle_size / photo_aspect)
+            new_width = target_size
+            new_height = int(target_size / photo_aspect)
         else:
-            new_height = circle_size
-            new_width = int(circle_size * photo_aspect)
+            new_height = target_size
+            new_width = int(target_size * photo_aspect)
             
         photo = photo.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        # Crop center
+        # Crop center to EXACT circle_size
         left = (new_width - circle_size) / 2
         top = (new_height - circle_size) / 2
         right = (new_width + circle_size) / 2
@@ -142,23 +148,13 @@ def create_badge_image(first_name, last_name, photo_url=None):
     except Exception as e:
         logger.warning(f"⚠️ Failed to process photo: {e}")
         
-    # --- FIX FOR WHITE LINE ON RIGHT EDGE ---
-    # The printer might be scaling slightly off.
-    # We can add a "Bleed" or simply ensure the background covers everything.
-    # The canvas creation already sets the background color.
-    # If the white line is physical (unprinted area), we might need to adjust the print origin in win32print logic
-    # or slightly over-size the image if the driver supports bleed.
-    # However, ensuring the image dimensions match the driver's printable area is key.
-    # CR80 is 2.125" x 3.375".
-    # At 300 DPI: 637.5 x 1012.5 pixels.
-    # We are using 639x1014 which is slightly larger (safe).
-    
     return img
 
 def create_back_image():
     """Generates the back of the badge (White with Black Logo)"""
     # Config - CR80 @ 300 DPI
-    WIDTH, HEIGHT = 639, 1014 
+    # INCREASED SIZE FOR BLEED: 670x1050 (Adds ~30-40px padding)
+    WIDTH, HEIGHT = 670, 1050 
     BG_COLOR = "white"
     
     # Canvas

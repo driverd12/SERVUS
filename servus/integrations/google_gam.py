@@ -182,9 +182,10 @@ def deprovision_user(context):
     target_email = user.work_email
     
     # 🎯 TARGET FOR DATA TRANSFER
-    transfer_target = "admin-wolverine@boom.aero"
+    transfer_target = CONFIG.get("OFFBOARDING_ADMIN_EMAIL", "admin-wolverine@boom.aero")
     
     logger.info(f"💣 Google: Starting FULL deprovisioning for {target_email}...")
+    logger.info(f"   ℹ️  Transfer Target (Service Account Context): {transfer_target}")
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would Wipe devices")

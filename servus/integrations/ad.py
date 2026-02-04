@@ -15,6 +15,7 @@ def get_session():
         return None
         
     # Using NTLM for Linux/EC2 compatibility
+    # Ensure requests-ntlm is installed in your environment
     return winrm.Session(host, auth=(user, password), transport='ntlm')
 
 def validate_user_exists(context):

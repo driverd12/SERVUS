@@ -13,6 +13,10 @@ class UserProfile(BaseModel):
     title: Optional[str] = None
     manager_email: Optional[EmailStr] = None
     
+    # New Fields for Badge Printing
+    preferred_first_name: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    
     # "Full-Time", "Contractor", "Intern"
     employment_type: str 
     

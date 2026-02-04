@@ -45,6 +45,6 @@ steps:
 
   # 8. Physical Access (Brivo)
   - id: physical_access
-    description: "Brivo: Create badge profile"
+    description: "Brivo: Queue badge print job (Manual binding required)"
     type: action
     action: brivo.provision_access

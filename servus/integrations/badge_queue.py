@@ -24,7 +24,7 @@ def get_sqs_client():
 def send_print_job(user_data):
     """
     Sends a badge print job to the SQS queue.
-    user_data: dict containing 'first_name', 'last_name', 'email', 'brivo_id'
+    user_data: dict containing 'first_name', 'last_name', 'email', 'preferred_first_name', 'profile_picture_url'
     """
     queue_url = CONFIG.get("SQS_BADGE_QUEUE_URL")
     if not queue_url:
@@ -33,9 +33,18 @@ def send_print_job(user_data):
 
     sqs = get_sqs_client()
     
+    # Extract only the metadata needed for the badge
+    # We use preferred_first_name if available, otherwise first_name
+    print_name = user_data.get("preferred_first_name") or user_data.get("first_name")
+    
     payload = {
         "action": "print_badge",
-        "user": user_data,
+        "user": {
+            "first_name": print_name,
+            "last_name": user_data.get("last_name"),
+            "email": user_data.get("email"),
+            "photo_url": user_data.get("profile_picture_url")
+        },
         "timestamp": str(user_data.get("timestamp", ""))
     }
 
@@ -45,6 +54,7 @@ def send_print_job(user_data):
             MessageBody=json.dumps(payload)
         )
         logger.info(f"✅ Sent Badge Print Job to Queue: {response.get('MessageId')}")
+        logger.info("   ℹ️  NOTE: IT must manually bind this badge to the user in the Brivo Console.")
         return True
     except Exception as e:
         logger.error(f"❌ Failed to send SQS message: {e}")

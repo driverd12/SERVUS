@@ -2,8 +2,11 @@ import re
 import logging
 import requests
 import urllib.parse
+from datetime import datetime, timedelta
 from servus.config import CONFIG
 from servus.models import UserProfile
+# Import the new client
+from servus.integrations.rippling import RipplingClient
 
 logger = logging.getLogger("servus.freshservice")
 
@@ -47,82 +50,75 @@ def fetch_ticket_data(ticket_id):
         last_name = " ".join(parts[1:])
         
         # 2. Enrichment (The Circuit Breaker)
-        rippling_data = _fetch_rippling_data(first_name, last_name)
+        # Use the shared RipplingClient
+        rippling_client = RipplingClient()
+        # Try to guess email from name
+        guessed_email = f"{first_name}.{last_name}@boom.aero".lower()
         
-        # 3. Construct Profile (Merge Ticket Data + Rippling Data)
-        return UserProfile(
-            first_name=first_name,
-            last_name=last_name,
-            work_email=rippling_data.get("email", f"{first_name}.{last_name}@boom.aero".lower()),
-            personal_email="pending@example.com", # Placeholder
-            department=rippling_data.get("department", "Engineering"), # Default to Eng if API fails
-            title=rippling_data.get("title", "Unknown"),
-            employment_type=rippling_data.get("employment_type", "Full-Time"),
-            start_date=start_date,
-            location="US"
-        )
+        # Try finding by email
+        rippling_profile = rippling_client.find_user_by_email(guessed_email)
+        
+        if rippling_profile:
+            logger.info(f"✅ Found match in Rippling: {rippling_profile.email}")
+            # Use the robust profile data
+            return rippling_profile
+        else:
+            logger.warning(f"⚠️  Could not find {guessed_email} in Rippling. Falling back to Ticket Data.")
+            # Fallback: Construct Profile from Ticket Data + Defaults
+            return UserProfile(
+                first_name=first_name,
+                last_name=last_name,
+                work_email=guessed_email,
+                personal_email="pending@example.com",
+                department="Engineering", # Default
+                title="Unknown",
+                employment_type="Full-Time", # Default
+                start_date=start_date,
+                location="US"
+            )
 
     except Exception as e:
         logger.error(f"Error processing ticket {ticket_id}: {e}")
         return None
 
+def scan_for_onboarding_tickets(minutes_lookback=60):
+    """
+    Scans Freshservice for recent tickets matching 'Employee Onboarding'.
+    Returns a list of ticket IDs.
+    """
+    domain = CONFIG.get("FRESHSERVICE_DOMAIN")
+    api_key = CONFIG.get("FRESHSERVICE_API_KEY")
+    
+    if not domain or not api_key: return []
+
+    # Calculate time window
+    # Freshservice API requires ISO format: YYYY-MM-DDTHH:MM:SSZ
+    start_time = (datetime.utcnow() - timedelta(minutes=minutes_lookback)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    # Query: created_at > start_time AND subject/type contains 'Onboarding'
+    # Note: Freshservice query syntax can be tricky. We'll fetch recent and filter.
+    url = f"https://{domain}/api/v2/tickets?updated_since={start_time}&order_by=created_at&order_type=desc"
+    
+    logger.info(f"🔍 Freshservice: Scanning for tickets updated since {start_time}...")
+    
+    matches = []
+    try:
+        resp = requests.get(url, auth=(api_key, "X"))
+        if resp.status_code == 200:
+            tickets = resp.json().get("tickets", [])
+            for t in tickets:
+                subject = t.get("subject", "").lower()
+                # Heuristic: Look for "Onboarding" or "New Hire"
+                if "onboard" in subject or "new hire" in subject:
+                    logger.info(f"   found candidate ticket: #{t['id']} - {t['subject']}")
+                    matches.append(t['id'])
+    except Exception as e:
+        logger.error(f"❌ Freshservice Scan Error: {e}")
+        
+    return matches
+
 def _fetch_rippling_data(first, last):
     """
-    Tries to get details from Rippling. Returns defaults on failure (502/403).
+    Deprecated: Use RipplingClient.find_user_by_email instead.
     """
-    token = CONFIG.get("RIPPLING_API_TOKEN")
-    if not token:
-        return {}
-
-    logger.info(f"🔍 Asking Rippling about {first} {last}...")
-    
-    # Try Step 1: Get ID
-    target_email = f"{first}.{last}@boom.aero".lower()
-    query = urllib.parse.quote(f"work_email eq '{target_email}'")
-    url = f"https://rest.ripplingapis.com/workers?filter={query}"
-    
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    
-    try:
-        resp = requests.get(url, headers=headers, timeout=10) # 10s timeout to avoid hanging
-        if resp.status_code == 200:
-            results = resp.json().get("results", [])
-            if results:
-                worker_id = results[0].get("id")
-                # Step 2: Get Details
-                return _fetch_worker_details(worker_id, headers)
-            else:
-                logger.warning("Rippling: User not found.")
-        else:
-            logger.warning(f"Rippling API failed ({resp.status_code}). Using defaults.")
-            
-    except Exception as e:
-        logger.warning(f"Rippling Connection Error: {e}")
-        
-    return {}
-
-def _fetch_worker_details(worker_id, headers):
-    url = f"https://rest.ripplingapis.com/workers/{worker_id}?expand=department,employment_type"
-    try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            
-            # Safe Parsing
-            dept = (data.get("department") or {}).get("name", "Engineering")
-            
-            emp_type_obj = data.get("employment_type")
-            if isinstance(emp_type_obj, dict):
-                e_type = emp_type_obj.get("label") or "Full-Time"
-            else:
-                e_type = "Full-Time"
-
-            return {
-                "email": data.get("work_email"),
-                "department": dept,
-                "title": (data.get("title") or {}).get("name"),
-                "employment_type": e_type
-            }
-    except Exception:
-        pass
     return {}

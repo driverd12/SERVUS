@@ -130,3 +130,40 @@ def add_to_channels(context):
             logger.error(f" - Failed to add to {channel_id}: {resp.get('error')}")
 
     return success_count > 0
+
+def deactivate_user(context):
+    """
+    Deactivates a user in Slack using the SCIM API.
+    """
+    user = context.get("user_profile")
+    if not user: return False
+    email = user.work_email
+
+    logger.info(f"🚫 Slack: Deactivating {email}...")
+
+    # 1. Find User ID
+    user_id = _lookup_user_by_email(email)
+    if not user_id:
+        logger.warning(f"⚠️ Slack: User {email} not found. Skipping deactivation.")
+        return False
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would deactivate Slack user {user_id}")
+        return True
+
+    # 2. Deactivate via SCIM API (DELETE /Users/{id})
+    # Note: This requires an Admin token with SCIM scopes or a Grid Admin token.
+    url = f"https://api.slack.com/scim/v1/Users/{user_id}"
+    headers = _get_headers()
+    
+    try:
+        resp = requests.delete(url, headers=headers)
+        if resp.status_code == 200 or resp.status_code == 204:
+            logger.info(f"✅ Slack: User {email} deactivated.")
+            return True
+        else:
+            logger.error(f"❌ Slack Deactivation Failed ({resp.status_code}): {resp.text}")
+            return False
+    except Exception as e:
+        logger.error(f"❌ Slack Connection Error: {e}")
+        return False

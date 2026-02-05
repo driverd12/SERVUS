@@ -2,6 +2,25 @@ import subprocess
 import json
 import os
 import time
+import argparse
+import logging
+from datetime import datetime
+
+# Setup Logging
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_file = os.path.join(log_dir, f"bulk_offboard_{timestamp}.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("bulk_offboard")
 
 # 1. The Cleaned Target List (37 Unique Accounts)
 TARGETS = [
@@ -47,13 +66,19 @@ TARGETS = [
 WORKFLOW = "servus/workflows/offboard_us.yaml"
 TEMP_PROFILE = "temp_offboard_profile.json"
 
-def run_offboarding(dry_run=True):
-    print(f"🚀 Starting Bulk Offboard sequence for {len(TARGETS)} users.")
-    if dry_run:
-        print("⚠️  DRY RUN MODE: No changes will be made.\n")
+def run_offboarding(dry_run=True, limit=None):
+    mode = "DRY RUN" if dry_run else "LIVE EXECUTION"
+    logger.info(f"🚀 Starting Bulk Offboard sequence for {len(TARGETS)} users.")
+    logger.info(f"👉 Mode: {mode}")
+    
+    if limit:
+        logger.info(f"👉 Limit: Processing only first {limit} users.")
+        targets_to_process = TARGETS[:limit]
+    else:
+        targets_to_process = TARGETS
 
-    for user in TARGETS:
-        print(f"Processing: {user['first']} {user['last']} <{user['email']}>...")
+    for i, user in enumerate(targets_to_process, 1):
+        logger.info(f"[{i}/{len(targets_to_process)}] Processing: {user['first']} {user['last']} <{user['email']}>...")
         
         # 1. Create temporary profile JSON
         profile_data = {
@@ -84,22 +109,28 @@ def run_offboarding(dry_run=True):
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
-                print("   ✅ Success")
-                # print(result.stdout) # Uncomment for verbose logs
+                logger.info("   ✅ Success")
+                # logger.debug(result.stdout) 
             else:
-                print("   ❌ Failed")
-                print(result.stderr)
+                logger.error("   ❌ Failed")
+                logger.error(result.stderr)
         except Exception as e:
-            print(f"   ❌ Exception: {e}")
+            logger.error(f"   ❌ Exception: {e}")
             
-        print("-" * 40)
+        logger.info("-" * 40)
         time.sleep(1) # Polite pause
 
     # Cleanup
     if os.path.exists(TEMP_PROFILE):
         os.remove(TEMP_PROFILE)
-    print("\n🏁 Bulk Sequence Complete.")
+    logger.info("\n🏁 Bulk Sequence Complete.")
 
 if __name__ == "__main__":
-    # CHANGE THIS TO False TO RUN FOR REAL
-    run_offboarding(dry_run=True)
+    parser = argparse.ArgumentParser(description="Bulk Offboard Suppliers")
+    parser.add_argument("--live", action="store_true", help="Run in LIVE mode (default is DRY RUN)")
+    parser.add_argument("--limit", type=int, help="Limit number of users to process (e.g. 1 for testing)")
+    
+    args = parser.parse_args()
+    
+    # Default is dry_run=True, so if --live is passed, dry_run=False
+    run_offboarding(dry_run=not args.live, limit=args.limit)

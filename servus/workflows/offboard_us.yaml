@@ -11,12 +11,13 @@ steps:
     type: action
     action: okta.deactivate_user
 
+  - id: slack_kill
+    description: "Slack: Deactivate account via API"
+    type: action
+    action: slack.deactivate_user
+
   - id: google_nuke
     description: "Google: Suspend, Wipe Device, Move OU"
     type: action
     action: google_gam.deprovision_user
 
-  - id: brivo_kill
-    description: "Brivo: Suspend badge access"
-    type: action
-    action: brivo.suspend_user

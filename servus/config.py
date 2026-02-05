@@ -85,6 +85,9 @@ CONFIG = {
     
     # Offboarding
     "OFFBOARDING_ADMIN_EMAIL": env_config.get("SERVUS_OFFBOARDING_ADMIN", "admin-wolverine@boom.aero"),
+
+    # Notifications
+    "SLACK_WEBHOOK_URL": env_config.get("SERVUS_SLACK_WEBHOOK_URL"),
 }
 
 def load_config():

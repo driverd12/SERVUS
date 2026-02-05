@@ -4,6 +4,7 @@ import schedule
 import csv
 import os
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 from servus.orchestrator import Orchestrator
 from servus.state import RunState
 from servus.workflow import load_workflow
@@ -11,12 +12,21 @@ from servus.config import CONFIG
 from servus.integrations.rippling import RipplingClient
 from servus.integrations import freshservice
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
-)
+# Configure Logging (Rotating File + Stream)
+log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+# File Handler (10MB max, keep 5 backups)
+file_handler = RotatingFileHandler("servus_scheduler.log", maxBytes=10*1024*1024, backupCount=5)
+file_handler.setFormatter(log_formatter)
+root_logger.addHandler(file_handler)
+
+# Console Handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+root_logger.addHandler(console_handler)
+
 logger = logging.getLogger("servus.scheduler")
 
 def run_onboarding(user_profile):

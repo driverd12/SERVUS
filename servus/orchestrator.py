@@ -3,6 +3,7 @@ import logging
 from .workflow import Workflow
 from .state import StateManager
 from .actions import ACTIONS
+from .notifier import SlackNotifier
 
 class Orchestrator:
     def __init__(self, wf: Workflow, context: dict, state: StateManager, logger: logging.Logger):
@@ -10,6 +11,7 @@ class Orchestrator:
         self.ctx = context
         self.state = state
         self.log = logger
+        self.notifier = SlackNotifier()
 
     def run(self, dry_run=False):
         # 🛠️ FIX: Removed reference to self.wf.version
@@ -17,6 +19,11 @@ class Orchestrator:
         
         # Inject dry_run into context so actions can see it
         self.ctx['dry_run'] = dry_run
+        
+        # Notify Start (Only if not dry run, to avoid spam during testing)
+        if not dry_run:
+            user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
+            self.notifier.notify_start(self.wf.name, user_email)
 
         for step in self.wf.steps:
             self.log.info(f"[{'DRY' if dry_run else 'RUN'}] {step.id}: {step.description} :: {step.action or 'manual'}")
@@ -51,8 +58,20 @@ class Orchestrator:
                         # Some dry runs return 'None' or 'True', failure returns 'False'
                         status = "⚠️  Action returned False" if result is False else "✅ Dry Run / Done"
                         self.log.info(f"   {status}")
+                        
+                        # If a step explicitly returns False in LIVE mode, it's a failure.
+                        if result is False and not dry_run:
+                             user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
+                             self.notifier.notify_failure(self.wf.name, user_email, step.id, "Action returned False")
+                             # We continue for now, but in a strict mode we might break.
 
                 except Exception as e:
                     self.log.error(f"   ❌ Exception: {str(e)}")
+                    if not dry_run:
+                        user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
+                        self.notifier.notify_failure(self.wf.name, user_email, step.id, str(e))
 
         self.log.info("Workflow Complete.")
+        if not dry_run:
+             user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
+             self.notifier.notify_success(self.wf.name, user_email)

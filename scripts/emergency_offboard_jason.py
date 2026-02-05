@@ -3,6 +3,7 @@ import json
 import os
 import time
 import logging
+import sys
 from datetime import datetime
 
 # Setup Logging
@@ -63,7 +64,7 @@ def run_emergency_offboard(dry_run=True):
     env["SERVUS_OFFBOARDING_ADMIN"] = TRANSFER_TARGET
     
     cmd = [
-        "python3", "-m", "servus", "offboard",
+        sys.executable, "-m", "servus", "offboard",
         "--workflow", WORKFLOW,
         "--profile", TEMP_PROFILE
     ]
@@ -78,8 +79,10 @@ def run_emergency_offboard(dry_run=True):
         
         if result.returncode == 0:
             logger.info("✅ Workflow Completed Successfully")
-            logger.info("--- Output ---")
+            logger.info("--- Output (Stdout) ---")
             logger.info(result.stdout)
+            logger.info("--- Logs (Stderr) ---")
+            logger.info(result.stderr)
         else:
             logger.error("❌ Workflow Failed")
             logger.error("--- Stderr ---")

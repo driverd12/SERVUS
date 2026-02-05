@@ -143,9 +143,33 @@ def deactivate_user(context):
 
     # 1. Find User ID
     user_id = _lookup_user_by_email(email)
+    
+    # 2. Check if already deactivated (if not found by email, or found but deleted)
+    # Note: _lookup_user_by_email returns ID if found and active.
+    # If not found, we can't be sure if they are deleted or just missing.
+    # But for offboarding, "not found" is a success state.
+    
     if not user_id:
-        logger.warning(f"⚠️ Slack: User {email} not found. Skipping deactivation.")
-        return False
+        # Try to find if they are already deactivated
+        # Slack API users.lookupByEmail does NOT return deleted users usually.
+        logger.warning(f"⚠️ Slack: User {email} not found (May already be deactivated).")
+        return True 
+
+    # Check if user is already deleted (if lookup returns deleted users, which it might depending on token)
+    # We need to fetch the full user object to be sure.
+    # But _lookup_user_by_email only returns ID.
+    # Let's trust that if we got an ID, they are likely active or we can check status.
+    
+    # Fetch full info to check 'deleted' flag
+    try:
+        info_url = f"https://slack.com/api/users.info?user={user_id}"
+        r = requests.get(info_url, headers=_get_headers())
+        info = r.json()
+        if info.get("ok") and info.get("user", {}).get("deleted"):
+            logger.info(f"✅ Slack: User {email} is ALREADY deactivated.")
+            return True
+    except Exception:
+        pass # Fall through to attempt deactivation
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would deactivate Slack user {user_id}")

@@ -187,6 +187,29 @@ def deprovision_user(context):
     logger.info(f"💣 Google: Starting FULL deprovisioning for {target_email}...")
     logger.info(f"   ℹ️  Transfer Target (Service Account Context): {transfer_target}")
 
+    # 1. Check if user exists (Primary or Archive)
+    # We check the primary email first
+    success, stdout, _ = run_gam(["info", "user", target_email])
+    
+    if not success:
+        # Check if already renamed to -archive
+        archive_email = target_email.replace("@", "-archive@")
+        logger.info(f"   ℹ️  User {target_email} not found. Checking {archive_email}...")
+        success_archive, stdout_archive, _ = run_gam(["info", "user", archive_email])
+        
+        if success_archive:
+            logger.info(f"   ✅ Found renamed user: {archive_email}")
+            target_email = archive_email # Update target to the archive email
+            # Check suspension status from stdout
+            if "Account suspended: True" in stdout_archive:
+                logger.info(f"   ✅ User {target_email} is ALREADY suspended.")
+                # We can return True here if we only care about suspension, 
+                # but we might want to ensure other steps (wipe, transfer) happened.
+                # For now, let's proceed to ensure idempotency.
+        else:
+            logger.warning(f"⚠️ Google: User {target_email} (and archive) not found. Already deleted?")
+            return True
+
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would Wipe devices")
         logger.info(f"[DRY-RUN] Would Remove from all groups")

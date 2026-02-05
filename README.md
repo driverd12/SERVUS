@@ -12,32 +12,64 @@
 
 **SERVUS: Provision in. Deprovision out. No loose ends.**
 
-SERVUS is a workflow-driven user lifecycle tool (onboarding now, offboarding next) designed to run headless on EC2/VM/container.
+SERVUS is a workflow-driven identity orchestration tool designed to augment Okta SCIM. It handles the "last mile" of customization for Active Directory, Google Workspace, Slack, and Physical Access (Brivo).
 
-## Quick start
+## 🏗️ Architecture (Phase 2: Okta Mastered)
+
+*   **Master of Record:** Rippling (HRIS) -> Okta.
+*   **Provisioning:** Okta SCIM handles account creation for AD, Google, and Slack.
+*   **SERVUS Role:**
+    *   **Validation:** Verifies AD attributes and Group memberships match HRIS data.
+    *   **Customization:** Moves Google OUs, adds Google Groups, and manages Slack Channels based on Employee Type (FTE vs Contractor).
+    *   **Physical Access:** Queues badge print jobs to a local Windows agent via AWS SQS.
+
+## 🚀 Quick Start
+
+### 1. Setup
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate  # Mac/Linux
+# .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 cp .env.example .env
-# edit .env with real secrets (do not commit)
-python -m servus onboard --workflow servus/workflows/onboard_us.yaml --profile examples/user_profile.json --dry-run
+# Edit .env with your secrets (Slack Webhook, Okta Token, AD Creds, etc.)
 ```
 
-## Workflows
-Workflows live in `servus/workflows/`. Each step can define:
-- `action`: what to do (e.g. `ad.provision_user`, `okta.assign_apps`, `builtin.manual`)
-- `verify`: how to confirm it worked
-- `requires`: dependencies
-- `retries`: retry policy
-
-## Secrets
-Secrets load from environment variables (optionally via `.env`). We do **not** embed AD/Okta secrets in source.
-
-If you still have the legacy script with embedded values, generate a `.env` locally:
+### 2. Run the Scheduler (The "Listener")
+The scheduler runs 24/7, polling Rippling and Freshservice for new hires.
 ```bash
-python scripts/extract_legacy_secrets.py /path/to/provision_user.py > .env
+python scripts/scheduler.py
+```
+*   **New Hires:** Automatically triggers the Onboarding Workflow.
+*   **Departures:** Logs to `pending_offboards.csv` (Safety Mode).
+
+### 3. Manual / Dry Run
+Test the logic without making changes:
+```bash
+# Test specific new hires
+python scripts/dry_run_new_hires.py
+
+# Run CLI manually
+python -m servus onboard --profile examples/user_profile.json --dry-run
 ```
 
-## Source artifacts
-- `docs/Onboarding.md` (best practices)
-- `docs/onboarding_template_master.csv` (checklist master)
+## 🛠️ Components
+
+### Workflows (`servus/workflows/`)
+*   `onboard_us.yaml`: The primary sequence (Validate AD -> Wait for Google -> Customize -> Slack -> Badge).
+*   `offboard_us.yaml`: The surgical deprovisioning sequence.
+
+### Badge Printing (`scripts/windows_badge_agent.py`)
+Runs on a Windows laptop connected to the ID card printer.
+*   Listens to AWS SQS queue.
+*   Downloads user photo and metadata.
+*   Generates badge image (Front/Back) and prints immediately.
+
+### Integrations (`servus/integrations/`)
+*   `ad.py`: Passive validation via WinRM.
+*   `google_gam.py`: GAM wrapper for OU/Group management.
+*   `slack.py`: Channel management via API.
+*   `rippling.py`: HRIS data fetching.
+
+## 📝 Documentation
+*   `docs/SERVUS_INSPECTION_PLAN.md`: Full verification checklist.
+*   `docs/Onboarding.md`: Process best practices.

@@ -38,7 +38,7 @@ TRANSFER_TARGET = "mihalis.veletas@boom.aero"
 WORKFLOW = "servus/workflows/offboard_us.yaml"
 TEMP_PROFILE = "temp_offboard_jason.json"
 
-def run_emergency_offboard(dry_run=True):
+def run_emergency_offboard(dry_run=False):
     logger.info(f"🚨 STARTING EMERGENCY OFFBOARDING for {TARGET['email']}")
     logger.info(f"👉 Mode: {'DRY RUN' if dry_run else 'LIVE EXECUTION'}")
     logger.info(f"👉 Transfer Target: {TRANSFER_TARGET}")
@@ -100,4 +100,4 @@ def run_emergency_offboard(dry_run=True):
 
 if __name__ == "__main__":
     # Default to Dry Run
-    run_emergency_offboard(dry_run=True)
+    run_emergency_offboard(dry_run=False)

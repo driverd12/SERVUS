@@ -238,9 +238,15 @@ def deprovision_user(context):
 
     # --- STEP 4: RENAME TO ARCHIVE ---
     # We rename BEFORE moving/suspending so the archive name sticks
-    archive_email = target_email.replace("@", "-archive@")
-    logger.info(f"   5. Renaming to {archive_email}...")
-    run_gam(["update", "user", target_email, "email", archive_email])
+    
+    # Check if already renamed (target_email ends with -archive@...)
+    if "-archive@" in target_email:
+        logger.info(f"   ℹ️  User {target_email} is ALREADY renamed. Skipping rename step.")
+        archive_email = target_email
+    else:
+        archive_email = target_email.replace("@", "-archive@")
+        logger.info(f"   5. Renaming to {archive_email}...")
+        run_gam(["update", "user", target_email, "email", archive_email])
 
     # --- STEP 5: MOVE OU ---
     logger.info("   6. Moving to /Deprovisioning OU...")

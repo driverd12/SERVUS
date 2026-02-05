@@ -1,15 +1,15 @@
 name: "SERVUS Supplier Offboarding"
 description: "Disable AD -> Deactivate Okta -> Wipe Google -> Kill Badge"
 steps:
-  - id: ad_disable
-    description: "AD: Disable account and move to Disabled OU"
-    type: action
-    action: ad.disable_user
-
   - id: okta_kill
     description: "Okta: Deactivate account (kills Zoom/Linear if SCIM works)"
     type: action
     action: okta.deactivate_user
+
+  - id: ad_verify
+    description: "AD: Verify account is disabled and moved (Post-Okta)"
+    type: action
+    action: ad.verify_user_disabled
 
   - id: slack_kill
     description: "Slack: Deactivate account via API"

@@ -105,9 +105,10 @@ def validate_user_exists(context):
     logger.error(f"❌ AD: Timed out waiting for {target_email} after {timeout}s")
     return False
 
-def disable_user(context):
+def verify_user_disabled(context):
     """
-    Disables the AD account AND moves it to the 'Disabled Users' OU.
+    Verifies that the user is disabled and in the Disabled Users OU in AD.
+    This is used to confirm Okta's deactivation propagated correctly.
     """
     user_profile = context.get("user_profile")
     if not user_profile: return False
@@ -117,43 +118,54 @@ def disable_user(context):
 
     target_email = user_profile.work_email
     
-    # Define the specific Disabled OU (Verify this path matches your AD structure)
-    # Using the Base DN from config to construct the full path
+    # Define the specific Disabled OU
     base_dn = CONFIG.get("AD_BASE_DN", "DC=boom,DC=local")
     disabled_ou_dn = f"OU=Disabled Users,{base_dn}" 
 
-    logger.info(f"🚫 AD: Disabling and Moving {target_email}...")
+    logger.info(f"🔍 AD: Verifying disable status for {target_email}...")
 
     if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would run: Disable-ADAccount -Identity {target_email}")
-        logger.info(f"[DRY-RUN] Would run: Move-ADObject -Identity {target_email} -TargetPath '{disabled_ou_dn}'")
+        logger.info(f"[DRY-RUN] Would verify AD account is disabled and in {disabled_ou_dn}")
         return True
 
-    # PowerShell: Disable first, then Move
+    # PowerShell: Check Enabled property and DistinguishedName
     ps_script = f"""
     try {{
-        $u = Get-ADUser -Identity "{target_email}" -ErrorAction Stop
+        $u = Get-ADUser -Identity "{target_email}" -Properties Enabled,DistinguishedName -ErrorAction Stop
         
-        # 1. Disable
-        Disable-ADAccount -Identity $u
-        Write-Output "DISABLED"
+        if ($u.Enabled -eq $false) {{
+            Write-Output "STATUS:DISABLED"
+        }} else {{
+            Write-Output "STATUS:ENABLED"
+        }}
         
-        # 2. Move
-        Move-ADObject -Identity $u.DistinguishedName -TargetPath "{disabled_ou_dn}"
-        Write-Output "MOVED"
+        Write-Output "DN:$($u.DistinguishedName)"
+        
     }} catch {{
+        Write-Output "NOT_FOUND"
         Write-Error $_.Exception.Message
     }}
     """
     
     try:
         result = session.run_ps(ps_script)
-        if result.status_code == 0 and "DISABLED" in result.std_out.decode():
-            logger.info(f"✅ AD Account Disabled and Moved to {disabled_ou_dn}")
+        output = result.std_out.decode()
+        
+        if "NOT_FOUND" in output:
+            logger.error(f"❌ AD: User {target_email} not found.")
+            return False
+            
+        is_disabled = "STATUS:DISABLED" in output
+        in_correct_ou = disabled_ou_dn.lower() in output.lower() # Case-insensitive check
+        
+        if is_disabled and in_correct_ou:
+            logger.info(f"✅ AD: User is DISABLED and in Disabled OU.")
             return True
         else:
-            err = result.std_err.decode()
-            logger.error(f"❌ AD Disable Failed: {err}")
+            if not is_disabled:
+                logger.warning(f"⚠️ AD: User is still ENABLED.")
+            if not in_correct_ou:
+                logger.warning(f"⚠️ AD: User is NOT in Disabled OU.")
             return False
             
     except Exception as e:

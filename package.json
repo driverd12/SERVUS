@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
+    "start:stdio": "node -r dotenv/config dist/server.js",
     "start:http": "MCP_HTTP=1 node -r dotenv/config dist/server.js --http --http-port 8787"
   },
   "dependencies": {

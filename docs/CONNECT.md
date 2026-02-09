@@ -12,7 +12,7 @@ Run:
 
 ```bash
 npm run build
-node dist/server.js
+npm run start:stdio
 ```
 
 Use your client to connect via STDIO:
@@ -43,6 +43,11 @@ Notes:
 MCP_HTTP_BEARER_TOKEN=dev-token
 MCP_HTTP_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
 ```
+
+## Data Migration
+
+- SQLite data lives at `./data/hub.sqlite` (plus `-wal` and `-shm`).
+- To move to a new machine, copy the entire `data/` directory and your `.env`.
 
 ## Tool Overview
 

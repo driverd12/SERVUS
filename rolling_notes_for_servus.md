@@ -29,3 +29,9 @@
 - **CONSEQUENCES:** Adds a small dependency and encourages storing the bearer token locally.
 - **ROLLBACK:** Remove `dotenv`, revert `start:http`, and delete MCP lines from `.env.example`.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/.env.example, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Add `start:stdio` script that loads `.env` and document data migration steps.
+- **CONTEXT:** Provide consistent startup and simple portability across machines.
+- **CONSEQUENCES:** Easier local usage and safer migration guidance.
+- **ROLLBACK:** Remove the `start:stdio` script and revert CONNECT.md updates.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

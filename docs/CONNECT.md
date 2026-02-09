@@ -2,6 +2,10 @@
 
 This server runs as a local-first MCP hub with STDIO or Streamable HTTP transport.
 
+## Node Version
+
+`better-sqlite3` currently expects Node LTS and a C++20 toolchain. Use Node 22 (recommended).
+
 ## STDIO (MVP)
 
 Run:

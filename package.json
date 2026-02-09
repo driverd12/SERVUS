@@ -8,11 +8,13 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:http": "MCP_HTTP=1 node -r dotenv/config dist/server.js --http --http-port 8787"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.4.5",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.23.0"
   },

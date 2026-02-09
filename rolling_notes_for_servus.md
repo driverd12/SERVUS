@@ -11,3 +11,21 @@
 - **CONSEQUENCES:** Requires Node LTS; reduces install failures on macOS.
 - **ROLLBACK:** Remove the Node engines entry, delete `.nvmrc`, and revert the CONNECT.md note.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/.nvmrc, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Upgrade MCP SDK to 1.26.0 to use Streamable HTTP transport (`server/streamableHttp`).
+- **CONTEXT:** SDK 0.6.1 lacks streamable HTTP exports, causing build/runtime failures.
+- **CONSEQUENCES:** Adds newer SDK dependency; HTTP transport compiles and runs as specified.
+- **ROLLBACK:** Downgrade `@modelcontextprotocol/sdk` in package.json and revert `src/transports/http.ts`.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/src/transports/http.ts
+
+- **DECISION:** Add `npm run start:http` helper script for faster HTTP startup.
+- **CONTEXT:** Reduce manual typing and ensure consistent HTTP launch flags.
+- **CONSEQUENCES:** Slightly more convenience; still requires `MCP_HTTP_BEARER_TOKEN` env.
+- **ROLLBACK:** Remove the `start:http` script from package.json and revert CONNECT.md change.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Load `.env` for HTTP startup via `dotenv` and document MCP token defaults in `.env.example`.
+- **CONTEXT:** Reduce manual setup and ensure consistent HTTP token usage across runs.
+- **CONSEQUENCES:** Adds a small dependency and encourages storing the bearer token locally.
+- **ROLLBACK:** Remove `dotenv`, revert `start:http`, and delete MCP lines from `.env.example`.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/.env.example, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

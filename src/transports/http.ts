@@ -18,11 +18,7 @@ export async function startHttpTransport(server: Server, options: HttpOptions) {
     throw new Error("MCP_HTTP_BEARER_TOKEN is required for HTTP transport");
   }
 
-  const transport = new StreamableHTTPServerTransport({} as any);
-  const handler = (transport as any).handleRequest?.bind(transport);
-  if (!handler) {
-    throw new Error("StreamableHTTPServerTransport missing handleRequest");
-  }
+  const transport = new StreamableHTTPServerTransport();
 
   const httpServer = http.createServer((req, res) => {
     if (!validateOrigin(req.headers.origin, options.allowedOrigins)) {
@@ -37,7 +33,13 @@ export async function startHttpTransport(server: Server, options: HttpOptions) {
       return;
     }
 
-    handler(req, res);
+    void transport.handleRequest(req, res).catch((error) => {
+      logEvent("http.error", { error: String(error) });
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end("Internal Server Error");
+      }
+    });
   });
 
   await server.connect(transport);

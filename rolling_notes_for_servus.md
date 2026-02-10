@@ -35,3 +35,9 @@
 - **CONSEQUENCES:** Easier local usage and safer migration guidance.
 - **ROLLBACK:** Remove the `start:stdio` script and revert CONNECT.md updates.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Resolve MCP hub paths relative to the repo root and load `.env` without CLI preloads.
+- **CONTEXT:** MCP clients that do not set `cwd` failed to resolve `dotenv/config` and could write data or run scripts from the wrong directory.
+- **CONSEQUENCES:** More reliable MCP startup; `.env`, SQLite data, and ADR scripts resolve consistently.
+- **ROLLBACK:** Revert changes in `src/server.ts`, `src/tools/adr.ts`, `package.json`, and related docs.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/adr.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

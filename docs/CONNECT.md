@@ -21,6 +21,11 @@ Use your client to connect via STDIO:
 - Codex: Add a local MCP tool using the same command.
 - VS Code Copilot Chat: Configure MCP with the command above.
 
+Notes:
+
+- The server loads `.env` from the repo root automatically. Set `DOTENV_CONFIG_PATH=/path/to/.env` to override.
+- Use the direct `node /Users/dan.driver/Cursor_projects/python/SERVUS/dist/server.js` command (no `-r dotenv/config`) so clients that do not set `cwd` can resolve dependencies.
+
 ## HTTP (Streamable)
 
 Run:

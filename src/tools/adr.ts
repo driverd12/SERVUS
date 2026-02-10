@@ -8,11 +8,12 @@ export const adrCreateSchema = z.object({
   status: z.string().min(1),
 });
 
-export function createAdr(input: z.infer<typeof adrCreateSchema>) {
-  const args = ["scripts/new_adr.py", "--title", input.title, "--status", input.status];
+export function createAdr(input: z.infer<typeof adrCreateSchema>, repoRoot = process.cwd()) {
+  const scriptPath = path.resolve(repoRoot, "scripts", "new_adr.py");
+  const args = [scriptPath, "--title", input.title, "--status", input.status];
   const result = spawnSync("python3", args, {
     encoding: "utf8",
-    cwd: process.cwd(),
+    cwd: repoRoot,
     maxBuffer: 1024 * 1024,
   });
 

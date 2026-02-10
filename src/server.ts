@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, Tool } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
@@ -17,7 +20,13 @@ import { startStdioTransport } from "./transports/stdio.js";
 import { startHttpTransport } from "./transports/http.js";
 import { truncate } from "./utils.js";
 
-const storage = new Storage("./data/hub.sqlite");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const envPath = process.env.DOTENV_CONFIG_PATH
+  ? path.resolve(process.env.DOTENV_CONFIG_PATH)
+  : path.join(repoRoot, ".env");
+dotenv.config({ path: envPath });
+
+const storage = new Storage(path.join(repoRoot, "data", "hub.sqlite"));
 storage.init();
 
 const server = new Server(
@@ -69,7 +78,7 @@ registerTool(
 );
 
 registerTool("adr.create", "Create an ADR file using scripts/new_adr.py.", adrCreateSchema, (input) =>
-  createAdr(input)
+  createAdr(input, repoRoot)
 );
 
 registerTool("who_knows", "Search memory and optionally consult providers.", whoKnowsSchema, (input) =>

@@ -48,6 +48,7 @@ npm run start:http
   `http://127.0.0.1:8787`  
   and send `Authorization: Bearer <token>`  
   and an `Origin` header matching `MCP_HTTP_ALLOWED_ORIGINS`.
+- The server auto-loads `/Users/dan.driver/Cursor_projects/python/SERVUS/.env`. Set `DOTENV_CONFIG_PATH` to override.
 
 ---
 

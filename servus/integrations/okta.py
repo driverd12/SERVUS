@@ -149,10 +149,18 @@ def deactivate_user(context):
     # 1. Get User ID
     okta_user = client.get_user(email)
     if not okta_user:
+        # Check if they are already DEPROVISIONED
+        # The get_user search might not return deprovisioned users depending on the query.
+        # But if we can't find them, we can't deactivate them.
         logger.warning(f"⚠️ Okta user {email} not found. Skipping deactivation.")
-        return False
+        return True # Treat as success (Idempotent)
         
     user_id = okta_user.get("id")
+    status = okta_user.get("status")
+    
+    if status == "DEPROVISIONED":
+        logger.info(f"✅ Okta User {email} is ALREADY Deactivated.")
+        return True
     
     # 2. Deactivate
     # Note: Okta requires sending a POST to this endpoint

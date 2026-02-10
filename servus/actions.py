@@ -14,7 +14,8 @@ ACTIONS = {
     # Active Directory
     "ad.provision_user": ad.validate_user_exists, # Remapped since we don't provision anymore
     "ad.validate_user_exists": ad.validate_user_exists,
-    "ad.verify_user_disabled": ad.verify_user_disabled,
+    "ad.verify_user_disabled": ad.ensure_user_disabled, # Remapped to the new safety net function
+    "ad.ensure_user_disabled": ad.ensure_user_disabled,
     
     # Okta
     "okta.find_user": okta.wait_for_user, # Remapped to wait loop

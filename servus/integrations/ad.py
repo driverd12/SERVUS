@@ -105,10 +105,11 @@ def validate_user_exists(context):
     logger.error(f"❌ AD: Timed out waiting for {target_email} after {timeout}s")
     return False
 
-def verify_user_disabled(context):
+def ensure_user_disabled(context):
     """
-    Verifies that the user is disabled and in the Disabled Users OU in AD.
-    This is used to confirm Okta's deactivation propagated correctly.
+    Ensures that the user is disabled and in the Disabled Users OU in AD.
+    If the user is found and enabled, it will DISABLE them.
+    This acts as a safety net if Okta fails to disable the user.
     """
     user_profile = context.get("user_profile")
     if not user_profile: return False
@@ -122,68 +123,112 @@ def verify_user_disabled(context):
     base_dn = CONFIG.get("AD_BASE_DN", "DC=boom,DC=local")
     disabled_ou_dn = f"OU=Disabled Users,{base_dn}" 
 
-    logger.info(f"🔍 AD: Verifying disable status for {target_email}...")
+    logger.info(f"🛡️ AD: Ensuring disable status for {target_email}...")
 
     if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would verify AD account is disabled and in {disabled_ou_dn}")
+        logger.info(f"[DRY-RUN] Would ensure AD account is disabled and in {disabled_ou_dn}")
         return True
 
-    # PowerShell: Check Enabled property and DistinguishedName
-    # We use -Filter "EmailAddress -eq '{target_email}'" as a fallback if Identity fails,
-    # or try to find by UPN.
+    # PowerShell: Check Status and Disable if needed
+    # Note: We use SilentlyContinue to suppress errors if Identity search fails initially.
+    # The 'try/catch' block handles critical failures.
     ps_script = f"""
+    $ErrorActionPreference = "Stop"
     try {{
-        $u = Get-ADUser -Identity "{target_email}" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        $u = $null
         
+        # 1. Try Identity (Exact Match)
+        try {{
+            $u = Get-ADUser -Identity "{target_email}" -Properties Enabled,DistinguishedName -ErrorAction Stop
+        }} catch {{
+            # Ignore identity not found, move to filters
+        }}
+
+        # 2. Try Email Address
         if (-not $u) {{
-            # Fallback: Try searching by EmailAddress
             $u = Get-ADUser -Filter "EmailAddress -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
         }}
-
+        
+        # 3. Try Mail Attribute
         if (-not $u) {{
-            # Fallback: Try searching by 'mail' attribute (often the source of truth for email)
             $u = Get-ADUser -Filter "mail -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
         }}
+        
+        # 4. Try UPN
+        if (-not $u) {{
+            $u = Get-ADUser -Filter "UserPrincipalName -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        }}
+        
+        # 5. Try SamAccountName (Prefix)
+        if (-not $u) {{
+            $prefix = "{target_email}".Split("@")[0]
+            $u = Get-ADUser -Filter "SamAccountName -eq '$prefix'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        }}
+
+        # 6. Try Display Name (First Last) - Case Insensitive
+        if (-not $u) {{
+            $u = Get-ADUser -Filter "Name -eq '{user_profile.first_name} {user_profile.last_name}' -or DisplayName -eq '{user_profile.first_name} {user_profile.last_name}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        }}
 
         if (-not $u) {{
-            # Fallback: Try searching by UserPrincipalName
-            $u = Get-ADUser -Filter "UserPrincipalName -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction Stop
+            Write-Output "NOT_FOUND"
+            return
         }}
 
-        if ($u.Enabled -eq $false) {{
-            Write-Output "STATUS:DISABLED"
+        $actions = @()
+
+        # 1. Check Enabled Status
+        if ($u.Enabled -eq $true) {{
+            Disable-ADAccount -Identity $u
+            $actions += "DISABLED"
         }} else {{
-            Write-Output "STATUS:ENABLED"
+            $actions += "ALREADY_DISABLED"
+        }}
+
+        # 2. Check OU
+        if ($u.DistinguishedName -notlike "*{disabled_ou_dn}*") {{
+            Move-ADObject -Identity $u.DistinguishedName -TargetPath "{disabled_ou_dn}"
+            $actions += "MOVED"
+        }} else {{
+            $actions += "ALREADY_MOVED"
         }}
         
-        Write-Output "DN:$($u.DistinguishedName)"
+        Write-Output ($actions -join "|")
         
     }} catch {{
-        Write-Output "NOT_FOUND"
         Write-Error $_.Exception.Message
     }}
     """
     
     try:
         result = session.run_ps(ps_script)
-        output = result.std_out.decode()
+        output = result.std_out.decode().strip()
+        error_out = result.std_err.decode().strip()
+
+        # Debug logging to see what's actually happening
+        if output:
+            logger.info(f"   [DEBUG] AD Output: {output}")
+        if error_out:
+            logger.error(f"   [DEBUG] AD Error: {error_out}")
         
         if "NOT_FOUND" in output:
-            logger.error(f"❌ AD: User {target_email} not found.")
-            return False
+            logger.warning(f"⚠️ AD: User {target_email} ({user_profile.first_name} {user_profile.last_name}) not found.")
+            return True # Treat as success for idempotency
             
-        is_disabled = "STATUS:DISABLED" in output
-        in_correct_ou = disabled_ou_dn.lower() in output.lower() # Case-insensitive check
-        
-        if is_disabled and in_correct_ou:
-            logger.info(f"✅ AD: User is DISABLED and in Disabled OU.")
-            return True
-        else:
-            if not is_disabled:
-                logger.warning(f"⚠️ AD: User is still ENABLED.")
-            if not in_correct_ou:
-                logger.warning(f"⚠️ AD: User is NOT in Disabled OU.")
+        if "DISABLED" in output:
+            logger.warning(f"🛡️ AD: User was ENABLED. Forced DISABLE.")
+        if "MOVED" in output:
+            logger.warning(f"🛡️ AD: User was in wrong OU. Forced MOVE.")
+            
+        if "ALREADY_DISABLED" in output and "ALREADY_MOVED" in output:
+            logger.info(f"✅ AD: User is already disabled and in correct OU.")
+            
+        # If we got output but didn't match any known state, something is wrong
+        if not any(x in output for x in ["DISABLED", "MOVED", "ALREADY_DISABLED", "ALREADY_MOVED"]):
+            logger.error(f"❌ AD: Unknown response from PowerShell: {output}")
             return False
+
+        return True
             
     except Exception as e:
         logger.error(f"❌ AD Connection Error: {e}")

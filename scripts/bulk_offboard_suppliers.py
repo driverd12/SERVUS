@@ -4,6 +4,8 @@ import os
 import time
 import argparse
 import logging
+import csv
+import sys
 from datetime import datetime
 
 # Setup Logging
@@ -22,63 +24,71 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bulk_offboard")
 
-# 1. The Cleaned Target List (37 Unique Accounts)
-TARGETS = [
-    {"first": "Antonio", "last": "Fedele", "email": "a.fedele-LDO@boom.aero"},
-    {"first": "Agostino", "last": "Luise", "email": "a.luise-LDO@boom.aero"},
-    {"first": "Almerigo", "last": "Pantalone", "email": "a.pantalone-LDO@boom.aero"},
-    {"first": "Alfredo", "last": "Ricciardi", "email": "a.ricciardi-LDO@boom.aero"},
-    {"first": "Aniello", "last": "Smarrazzo", "email": "a.smarrazzo-LDO@boom.aero"},
-    {"first": "Angelo", "last": "Sportelli", "email": "a.sportelli-LDO@boom.aero"},
-    {"first": "Cedric", "last": "Puigdengolas", "email": "c.puigdengolas-LIS@boom.aero"},
-    {"first": "Ferdinando", "last": "Caramiello", "email": "f.caramiello-LDO@boom.aero"},
-    {"first": "Francesco", "last": "Ingegno", "email": "f.ingegno-LDO@boom.aero"},
-    {"first": "Gioacchino", "last": "Carlone", "email": "g.carlone-LDO@boom.aero"},
-    {"first": "Giulio", "last": "De Maria", "email": "g.demaria-LDO@boom.aero"},
-    {"first": "Giuseppe", "last": "Di Meo", "email": "g.dimeo-LDO@boom.aero"},
-    {"first": "Giovanni", "last": "Di Somma", "email": "g.disomma-LDO@boom.aero"},
-    {"first": "Giovanni", "last": "Gente", "email": "g.gente-LDO@boom.aero"},
-    {"first": "Gaetano", "last": "Ricciardi", "email": "g.ricciardi-LDO@boom.aero"},
-    {"first": "Ilaria", "last": "Blasi", "email": "i.blasi-LDO@boom.aero"},
-    {"first": "Iker", "last": "Pradovaso", "email": "i.pradovaso-ANN@boom.aero"},
-    {"first": "Iker", "last": "Zalbide Padura", "email": "i.zalbide-ANN@boom.aero"},
-    {"first": "Jeremy", "last": "Granier", "email": "j.granier-LIS@boom.aero"},
-    {"first": "Jose Ignacio", "last": "Izar De La Fuente", "email": "j.izardelafuente-ANN@boom.aero"},
-    {"first": "Jerome", "last": "Sisquet", "email": "j.sisquet-LIS@boom.aero"},
-    {"first": "Luis Angel", "last": "Alejo", "email": "l.alejo-ANN@boom.aero"},
-    {"first": "Luca", "last": "Angelino", "email": "l.angelino-LDO@boom.aero"},
-    {"first": "Luca", "last": "Coppola", "email": "l.coppola-LDO@boom.aero"},
-    {"first": "Luca", "last": "Monopoli", "email": "l.monopoli-LDO@boom.aero"},
-    {"first": "Lorenza", "last": "Nola", "email": "l.nola-LDO@boom.aero"},
-    {"first": "Nicolas", "last": "Boulous", "email": "n.boulous-LIS@boom.aero"},
-    {"first": "Nicola", "last": "Capasso", "email": "n.capasso-LDO@boom.aero"},
-    {"first": "Paolo", "last": "Ambrico", "email": "p.ambrico-LDO@boom.aero"},
-    {"first": "Pasquale", "last": "Francabandiera", "email": "p.francabandiera-LDO@boom.aero"},
-    {"first": "Pasquale", "last": "Gambardella", "email": "p.gambardella-LDO@boom.aero"},
-    {"first": "Ruben", "last": "Elices Vidriales", "email": "r.elices-ANN@boom.aero"},
-    {"first": "Ruggero", "last": "Grafiti", "email": "r.grafiti-LDO@boom.aero"},
-    {"first": "Vincenzo", "last": "Volpara", "email": "v.volpara-LDO@boom.aero"},
-    {"first": "Xabier", "last": "Aia Lopez de Foronda", "email": "x.aia-ANN@boom.aero"},
-    {"first": "Xavier", "last": "Devos", "email": "x.devos-LIS@boom.aero"},
-    {"first": "Yoann", "last": "Julou", "email": "y.julou-LIS@boom.aero"}
-]
-
+CSV_FILE = "docs/supplier_offboardings_SERVUS.csv"
 WORKFLOW = "servus/workflows/offboard_us.yaml"
 TEMP_PROFILE = "temp_offboard_profile.json"
 
+def load_targets_from_csv(filepath):
+    targets = []
+    if not os.path.exists(filepath):
+        logger.error(f"❌ CSV file not found: {filepath}")
+        return []
+    
+    try:
+        with open(filepath, mode='r', encoding='utf-8-sig') as f: # utf-8-sig to handle BOM if present
+            reader = csv.DictReader(f)
+            for row in reader:
+                # CSV headers: username,email,empType,transfer target
+                # We need to parse names from email or username if not provided
+                email = row.get("email", "").strip()
+                if not email: continue
+                
+                # Guess names from email (first.last@...)
+                local_part = email.split("@")[0]
+                if "." in local_part:
+                    first, last = local_part.split(".", 1)
+                    # Remove any suffix like -LDO from last name if present in email?
+                    # Actually, the username has -LDO, email usually does too based on the file.
+                    # e.g. a.fedele-LDO@boom.aero
+                    # Let's just use raw strings, it's for logging mostly.
+                else:
+                    first, last = local_part, "Unknown"
+
+                targets.append({
+                    "first": first.capitalize(),
+                    "last": last.capitalize(),
+                    "email": email,
+                    "empType": row.get("empType", "Contractor"),
+                    "transfer_target": row.get("transfer target", "admin-wolverine@boom.aero").strip()
+                })
+    except Exception as e:
+        logger.error(f"❌ Failed to read CSV: {e}")
+        return []
+    
+    return targets
+
 def run_offboarding(dry_run=True, limit=None):
     mode = "DRY RUN" if dry_run else "LIVE EXECUTION"
-    logger.info(f"🚀 Starting Bulk Offboard sequence for {len(TARGETS)} users.")
+    
+    # Load Targets
+    all_targets = load_targets_from_csv(CSV_FILE)
+    if not all_targets:
+        logger.error("No targets found. Exiting.")
+        return
+
+    logger.info(f"🚀 Starting Bulk Offboard sequence for {len(all_targets)} users.")
     logger.info(f"👉 Mode: {mode}")
+    logger.info(f"👉 Input: {CSV_FILE}")
     
     if limit:
         logger.info(f"👉 Limit: Processing only first {limit} users.")
-        targets_to_process = TARGETS[:limit]
+        targets_to_process = all_targets[:limit]
     else:
-        targets_to_process = TARGETS
+        targets_to_process = all_targets
 
     for i, user in enumerate(targets_to_process, 1):
         logger.info(f"[{i}/{len(targets_to_process)}] Processing: {user['first']} {user['last']} <{user['email']}>...")
+        logger.info(f"   Transfer Target: {user['transfer_target']}")
         
         # 1. Create temporary profile JSON
         profile_data = {
@@ -87,8 +97,8 @@ def run_offboarding(dry_run=True, limit=None):
             "work_email": user["email"],
             "department": "Supplier/Contractor",
             "title": "External",
-            "employment_type": "Contractor",
-            "start_date": "2020-01-01", # Dummy dates for schema validation
+            "employment_type": user["empType"], # e.g. empType-SUP
+            "start_date": "2020-01-01", 
             "manager": "unknown" 
         }
         
@@ -96,8 +106,12 @@ def run_offboarding(dry_run=True, limit=None):
             json.dump(profile_data, f)
             
         # 2. Build Command
+        # Pass transfer target via ENV
+        env = os.environ.copy()
+        env["SERVUS_OFFBOARDING_ADMIN"] = user["transfer_target"]
+
         cmd = [
-            "python3", "-m", "servus", "offboard",
+            sys.executable, "-m", "servus", "offboard",
             "--workflow", WORKFLOW,
             "--profile", TEMP_PROFILE
         ]
@@ -107,13 +121,22 @@ def run_offboarding(dry_run=True, limit=None):
             
         # 3. Execute SERVUS
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            # Capture both stdout and stderr
+            result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            
             if result.returncode == 0:
                 logger.info("   ✅ Success")
-                # logger.debug(result.stdout) 
+                logger.info("--- Output (Stdout) ---")
+                logger.info(result.stdout)
+                logger.info("--- Logs (Stderr) ---")
+                logger.info(result.stderr)
             else:
                 logger.error("   ❌ Failed")
+                logger.error("--- Stderr ---")
                 logger.error(result.stderr)
+                logger.info("--- Stdout ---")
+                logger.info(result.stdout)
+
         except Exception as e:
             logger.error(f"   ❌ Exception: {e}")
             
@@ -126,7 +149,7 @@ def run_offboarding(dry_run=True, limit=None):
     logger.info("\n🏁 Bulk Sequence Complete.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Bulk Offboard Suppliers")
+    parser = argparse.ArgumentParser(description="Bulk Offboard Suppliers from CSV")
     parser.add_argument("--live", action="store_true", help="Run in LIVE mode (default is DRY RUN)")
     parser.add_argument("--limit", type=int, help="Limit number of users to process (e.g. 1 for testing)")
     

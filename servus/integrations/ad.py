@@ -129,10 +129,27 @@ def verify_user_disabled(context):
         return True
 
     # PowerShell: Check Enabled property and DistinguishedName
+    # We use -Filter "EmailAddress -eq '{target_email}'" as a fallback if Identity fails,
+    # or try to find by UPN.
     ps_script = f"""
     try {{
-        $u = Get-ADUser -Identity "{target_email}" -Properties Enabled,DistinguishedName -ErrorAction Stop
+        $u = Get-ADUser -Identity "{target_email}" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
         
+        if (-not $u) {{
+            # Fallback: Try searching by EmailAddress
+            $u = Get-ADUser -Filter "EmailAddress -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        }}
+
+        if (-not $u) {{
+            # Fallback: Try searching by 'mail' attribute (often the source of truth for email)
+            $u = Get-ADUser -Filter "mail -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction SilentlyContinue
+        }}
+
+        if (-not $u) {{
+            # Fallback: Try searching by UserPrincipalName
+            $u = Get-ADUser -Filter "UserPrincipalName -eq '{target_email}'" -Properties Enabled,DistinguishedName -ErrorAction Stop
+        }}
+
         if ($u.Enabled -eq $false) {{
             Write-Output "STATUS:DISABLED"
         }} else {{

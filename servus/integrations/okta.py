@@ -162,6 +162,20 @@ def deactivate_user(context):
         resp = requests.post(url, headers=client.headers)
         if resp.status_code == 200 or resp.status_code == 204:
             logger.info(f"✅ Okta User {email} Deactivated.")
+            
+            # --- BONUS: Unassign Slack App (Surgical SCIM) ---
+            # This forces Slack deactivation even if global SCIM is off or flaky.
+            # We need the Slack App ID from config or lookup.
+            slack_app_id = CONFIG.get("OKTA_APP_SLACK")
+            if slack_app_id:
+                logger.info(f"   ✂️  Unassigning Slack App ({slack_app_id}) from user...")
+                app_url = f"{client.base_url}/apps/{slack_app_id}/users/{user_id}"
+                app_resp = requests.delete(app_url, headers=client.headers)
+                if app_resp.status_code == 204:
+                    logger.info(f"   ✅ Slack App Unassigned (Triggers Deactivation)")
+                else:
+                    logger.warning(f"   ⚠️  Failed to unassign Slack App: {app_resp.status_code}")
+            
             return True
         else:
             logger.error(f"❌ Okta Deactivation Failed: {resp.text}")

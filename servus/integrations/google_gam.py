@@ -248,6 +248,41 @@ def deprovision_user(context):
         logger.info(f"   5. Renaming to {archive_email}...")
         run_gam(["update", "user", target_email, "email", archive_email])
 
+    # --- STEP 4.5: ALIAS SWAP (Forwarding) ---
+    # Since we can't use Recipient Address Maps via API, we use the Alias Swap method.
+    # 1. Archive user has 'jason@' as an alias (automatically created on rename).
+    # 2. We delete that alias from the archive user.
+    # 3. We add 'jason@' as an alias to the manager (transfer_target).
+    
+    original_email = archive_email.replace("-archive@", "@")
+    
+    logger.info(f"   5.5. Setting up forwarding via Alias Swap...")
+    logger.info(f"        - Removing alias {original_email} from {archive_email}")
+    logger.info(f"        - Adding alias {original_email} to {transfer_target}")
+
+    if not context.get("dry_run"):
+        # A. Delete alias from archive user
+        # Correct Syntax: gam delete alias <alias_email>
+        success_del, stdout_del, stderr_del = run_gam(["delete", "alias", original_email])
+        if success_del:
+            logger.info(f"        ✅ Removed alias {original_email}")
+        else:
+            # It might fail if the alias doesn't exist (e.g. already deleted), which is fine.
+            logger.warning(f"        ⚠️  Could not remove alias (maybe already gone?): {stderr_del}")
+
+        # B. Add alias to manager
+        # Correct Syntax: gam create alias <alias_email> user <target_user>
+        success_add, stdout_add, stderr_add = run_gam(["create", "alias", original_email, "user", transfer_target])
+        if success_add:
+            logger.info(f"        ✅ Forwarding Active: {original_email} -> {transfer_target}")
+        else:
+            if "Duplicate" in stderr_add or "Duplicate" in stdout_add:
+                 logger.info(f"        ✅ Forwarding Active (Alias already exists): {original_email} -> {transfer_target}")
+            else:
+                 logger.error(f"        ❌ Failed to add alias to manager: {stderr_add}")
+    else:
+        logger.info(f"[DRY-RUN] Would swap aliases to enable forwarding.")
+
     # --- STEP 5: MOVE OU ---
     logger.info("   6. Moving to /Deprovisioning OU...")
     # Ensure this OU exists in Google Admin, or this step will fail!

@@ -23,6 +23,7 @@ npm run start:http
 - Required for HTTP:
   - `MCP_HTTP_BEARER_TOKEN`
   - `MCP_HTTP_ALLOWED_ORIGINS`
+- API keys are not required for local continuity workflows.
 
 **Where data lives**
 - SQLite: `/Users/dan.driver/Cursor_projects/python/SERVUS/data/hub.sqlite` plus `-wal` and `-shm`.
@@ -36,8 +37,12 @@ npm run start:http
 - `memory.append`, `memory.search`
 - `transcript.append`, `transcript.summarize`
 - `adr.create`
-- `who_knows`
-- `consult.openai`, `consult.gemini`
+- `who_knows`, `knowledge.query`
+
+**Attribution fields (who wrote the entry)**
+- `source_client` (e.g. `cursor`, `codex`)
+- `source_model` (e.g. `claude-opus-4.1`, `gpt-5.3-codex`)
+- `source_agent` (e.g. `assistant`, `reviewer`)
 
 ---
 

@@ -1,4 +1,14 @@
 The opposite of [[Offboarding]]!
+
+## MCP Continuity (Local-Only)
+
+- Shared IDE continuity now uses the local MCP hub as the source of truth.
+- Use `transcript.append` for step-level capture and `transcript.summarize` for local deterministic checkpoints.
+- Use attribution fields on writes to track contributor identity:
+  - `source_client` (e.g. `cursor`, `codex`)
+  - `source_model` (e.g. model identifier in use)
+  - `source_agent` (e.g. `assistant`, `reviewer`)
+- No cloud provider API keys are required for this continuity workflow.
 ## Manual Onboarding Best Practices
 - Always copy-and-paste usernames and names.  If you type usernames or names anywhere, you will eventually make a typo.  Typos in usernames are time consuming to correct.  If there is a Typo in a name, best that it comes from upstream-- not from you.
 ## Create a checklist document

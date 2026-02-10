@@ -14,7 +14,6 @@ import {
   transcriptSummarizeSchema,
 } from "./tools/transcript.js";
 import { adrCreateSchema, createAdr } from "./tools/adr.js";
-import { consultSchema, consultOpenAI, consultGemini } from "./tools/consult.js";
 import { whoKnows, whoKnowsSchema } from "./tools/who_knows.js";
 import { startStdioTransport } from "./transports/stdio.js";
 import { startHttpTransport } from "./transports/http.js";
@@ -50,10 +49,12 @@ type ToolEntry = {
 const toolRegistry = new Map<string, ToolEntry>();
 
 function registerTool(name: string, description: string, schema: z.ZodTypeAny, handler: ToolEntry["handler"]) {
+  // MCP requires inputSchema to be an object schema at the root.
+  // `$refStrategy: "none"` inlines the object instead of returning a root `$ref`.
   const tool: Tool = {
     name,
     description,
-    inputSchema: zodToJsonSchema(schema, { name }) as Tool["inputSchema"],
+    inputSchema: zodToJsonSchema(schema, { $refStrategy: "none" }) as Tool["inputSchema"],
   };
   toolRegistry.set(name, { schema, tool, handler });
 }
@@ -72,7 +73,7 @@ registerTool("transcript.append", "Append a transcript entry.", transcriptAppend
 
 registerTool(
   "transcript.summarize",
-  "Summarize transcripts for a session and store as a memory note.",
+  "Generate a deterministic local summary for a transcript session and store it as a memory note.",
   transcriptSummarizeSchema,
   (input) => summarizeTranscript(storage, input)
 );
@@ -81,16 +82,12 @@ registerTool("adr.create", "Create an ADR file using scripts/new_adr.py.", adrCr
   createAdr(input, repoRoot)
 );
 
-registerTool("who_knows", "Search memory and optionally consult providers.", whoKnowsSchema, (input) =>
+registerTool("who_knows", "Search local notes and transcripts in the shared MCP knowledge base.", whoKnowsSchema, (input) =>
   whoKnows(storage, input)
 );
 
-registerTool("consult.openai", "Consult OpenAI for an answer.", consultSchema, (input) =>
-  consultOpenAI(input)
-);
-
-registerTool("consult.gemini", "Consult Gemini for an answer.", consultSchema, (input) =>
-  consultGemini(input)
+registerTool("knowledge.query", "Query local notes and transcripts in the shared MCP knowledge base.", whoKnowsSchema, (input) =>
+  whoKnows(storage, input)
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({

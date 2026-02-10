@@ -41,3 +41,21 @@
 - **CONSEQUENCES:** More reliable MCP startup; `.env`, SQLite data, and ADR scripts resolve consistently.
 - **ROLLBACK:** Revert changes in `src/server.ts`, `src/tools/adr.ts`, `package.json`, and related docs.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/adr.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Emit inline object JSON Schemas for MCP tool `inputSchema` generation.
+- **CONTEXT:** MCP clients validated `tools/list` responses and rejected root `$ref` schemas, resulting in `0 tools` despite a successful server connection.
+- **CONSEQUENCES:** Tool discovery now succeeds; existing tool handlers and behavior stay unchanged.
+- **ROLLBACK:** Restore `zodToJsonSchema(schema, { name })` in `src/server.ts` and rebuild.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/dist/server.js
+
+- **DECISION:** Add a repo-local Cursor rule that enforces local-first MCP continuity capture.
+- **CONTEXT:** Need consistent capture behavior during agent work without sending transcript content to external providers by default.
+- **CONSEQUENCES:** Cursor agents should append transcripts per meaningful action and checkpoint locally; provider-backed summarize is now explicit opt-in.
+- **ROLLBACK:** Delete `.cursor/rules/mcp_capture_local_first.mdc` and remove the associated policy text from Codex config if desired.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/.cursor/rules/mcp_capture_local_first.mdc, /Users/dan.driver/.codex/config.toml
+
+- **DECISION:** Convert MCP hub consultation/summarization to local-only knowledge workflows and add actor attribution fields.
+- **CONTEXT:** Goal is a shared on-device knowledge base across IDE clients without cloud model coupling or API key requirements.
+- **CONSEQUENCES:** `knowledge.query` and `who_knows` now query local notes/transcripts only; `transcript.summarize` is deterministic/local; notes and transcripts can record `source_client`, `source_model`, and `source_agent`.
+- **ROLLBACK:** Revert `src/server.ts`, `src/tools/transcript.ts`, `src/tools/who_knows.ts`, `src/tools/memory.ts`, `src/storage.ts`, and docs updates, then rebuild.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/transcript.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/who_knows.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/storage.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

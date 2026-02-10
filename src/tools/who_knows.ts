@@ -1,67 +1,85 @@
 import { z } from "zod";
 import { Storage } from "../storage.js";
-import { consultOpenAI, consultGemini } from "./consult.js";
-import { truncate } from "../utils.js";
 
 export const whoKnowsSchema = z.object({
   query: z.string().min(1),
   tags: z.array(z.string()).optional(),
+  session_id: z.string().optional(),
+  source_client: z.string().optional(),
+  source_model: z.string().optional(),
+  source_agent: z.string().optional(),
+  include_notes: z.boolean().optional(),
+  include_transcripts: z.boolean().optional(),
+  limit: z.number().int().min(1).max(50).optional(),
   consult: z.boolean().optional(),
 });
 
 export async function whoKnows(storage: Storage, input: z.infer<typeof whoKnowsSchema>) {
-  const matches = storage.searchNotes({
+  const limit = input.limit ?? 10;
+  const includeNotes = input.include_notes ?? true;
+  const includeTranscripts = input.include_transcripts ?? true;
+
+  const notes = includeNotes
+    ? storage.searchNotes({
+        query: input.query,
+        tags: input.tags,
+        source_client: input.source_client,
+        source_model: input.source_model,
+        source_agent: input.source_agent,
+        limit,
+      })
+    : [];
+
+  const transcripts = includeTranscripts
+    ? storage.searchTranscripts({
+        query: input.query,
+        session_id: input.session_id,
+        source_client: input.source_client,
+        source_model: input.source_model,
+        source_agent: input.source_agent,
+        limit,
+      })
+    : [];
+
+  const matches = [
+    ...notes.map((note) => ({
+      type: "note",
+      id: note.id,
+      created_at: note.created_at,
+      source: note.source,
+      source_client: note.source_client,
+      source_model: note.source_model,
+      source_agent: note.source_agent,
+      score: note.score ?? 0,
+      text: note.text,
+    })),
+    ...transcripts.map((transcript) => ({
+      type: "transcript",
+      id: transcript.id,
+      created_at: transcript.created_at,
+      session_id: transcript.session_id,
+      source_client: transcript.source_client,
+      source_model: transcript.source_model,
+      source_agent: transcript.source_agent,
+      kind: transcript.kind,
+      score: transcript.score ?? 0,
+      text: transcript.text,
+    })),
+  ]
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || b.created_at.localeCompare(a.created_at))
+    .slice(0, limit);
+
+  return {
+    local_only: true,
     query: input.query,
-    tags: input.tags,
-    limit: 10,
-  });
-
-  const providers = {
-    openai: { enabled: Boolean(process.env.OPENAI_API_KEY) },
-    gemini: { enabled: Boolean(process.env.GEMINI_API_KEY) },
-  };
-
-  const consultResponses: Array<Record<string, unknown>> = [];
-
-  if (input.consult) {
-    const prompt = buildConsultPrompt(input.query, matches);
-    if (providers.openai.enabled) {
-      const response = await consultOpenAI({ prompt });
-      consultResponses.push({ provider: "openai", ...sanitizeProvider(response) });
-    }
-    if (providers.gemini.enabled) {
-      const response = await consultGemini({ prompt });
-      consultResponses.push({ provider: "gemini", ...sanitizeProvider(response) });
-    }
-  }
-
-  return {
+    counts: {
+      notes: notes.length,
+      transcripts: transcripts.length,
+      matches: matches.length,
+    },
+    consult_ignored: input.consult ? "consult flag ignored in local-only mode" : undefined,
+    notes,
+    transcripts,
     matches,
-    providers,
-    consult_responses: consultResponses.length ? consultResponses : undefined,
-  };
-}
-
-function buildConsultPrompt(query: string, matches: Array<{ text: string; source: string | null }>) {
-  const snippets = matches
-    .slice(0, 5)
-    .map((match, index) => `#${index + 1} (${match.source ?? "unknown"}) ${truncate(match.text, 600)}`)
-    .join("\n\n");
-  return [
-    "Use the following memory snippets to answer the user question.",
-    "If the answer is not in the snippets, say so plainly.",
-    `Question: ${query}`,
-    "---",
-    snippets || "(no local matches)",
-  ].join("\n");
-}
-
-function sanitizeProvider(result: { enabled: boolean; ok?: boolean; text?: string; model?: string; error?: string }) {
-  return {
-    enabled: result.enabled,
-    ok: result.ok,
-    model: result.model,
-    text: result.text ? truncate(result.text, 2000) : undefined,
-    error: result.error ? truncate(result.error, 2000) : undefined,
   };
 }

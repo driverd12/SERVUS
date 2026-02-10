@@ -21,5 +21,6 @@
 
 ## External Providers
 
-- OpenAI and Gemini are optional; calls are skipped when keys are missing.
-- Provider failures are captured and returned without crashing the server.
+- Provider-backed consultation is disabled in local-only mode.
+- Continuity capture and query workflows run on local SQLite data only.
+- If provider tools are re-enabled in future, treat them as explicit opt-in and document the data boundary.

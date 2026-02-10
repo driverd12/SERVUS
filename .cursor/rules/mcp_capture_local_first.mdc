@@ -1,0 +1,19 @@
+---
+description: Local-first MCP capture policy for SERVUS
+alwaysApply: true
+---
+Use the local MCP server `mcp-playground-hub` for continuity capture.
+
+Required capture behavior:
+- After each meaningful completed command/action, call `transcript.append`.
+- Keep one stable `session_id` per active work thread.
+- Set `source_client` to `cursor`.
+- Keep entries factual and short (what changed, why, outcome, next step).
+
+Local-only guardrails:
+- Do not call `consult.openai` or `consult.gemini` unless the user explicitly requests external provider usage.
+- Do not auto-run `transcript.summarize` in local-only mode.
+- For local summaries, use `memory.append` at checkpoints (for example every 8-12 transcript entries and at handoff).
+
+When user explicitly asks for provider-backed summaries:
+- Run `transcript.summarize` at the requested checkpoint and store the resulting summary note ID.

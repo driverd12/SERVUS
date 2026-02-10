@@ -25,6 +25,7 @@ Notes:
 
 - The server loads `.env` from the repo root automatically. Set `DOTENV_CONFIG_PATH=/path/to/.env` to override.
 - Use the direct `node /Users/dan.driver/Cursor_projects/python/SERVUS/dist/server.js` command (no `-r dotenv/config`) so clients that do not set `cwd` can resolve dependencies.
+- API keys are not required for local continuity workflows.
 
 ## HTTP (Streamable)
 
@@ -59,5 +60,14 @@ MCP_HTTP_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
 - `memory.append`, `memory.search`
 - `transcript.append`, `transcript.summarize`
 - `adr.create`
-- `who_knows`
-- `consult.openai`, `consult.gemini`
+- `who_knows`, `knowledge.query`
+
+## Local-Only Knowledge Mode
+
+- This MCP hub now operates as a local shared knowledge base for IDE clients.
+- `consult.openai` and `consult.gemini` are disabled and should not be used for continuity workflows.
+- `transcript.summarize` is deterministic and local (no provider API call).
+- Capture "who wrote this" by setting:
+  - `source_client` (for example: `cursor`, `codex`)
+  - `source_model` (for example: `claude-opus-4.1`, `gpt-5.3-codex`)
+  - `source_agent` (for example: `assistant`, `planner`, `reviewer`)

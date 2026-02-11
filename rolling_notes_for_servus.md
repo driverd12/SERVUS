@@ -65,3 +65,9 @@
 - **CONSEQUENCES:** Added 21 local MCP tools and new SQLite tables for policy evaluations, run events, mutation journal, locks, decisions, and incidents; mutating tools now require `mutation.idempotency_key` and `mutation.side_effect_fingerprint`.
 - **ROLLBACK:** Revert `src/server.ts`, `src/storage.ts`, new tool modules under `src/tools/`, and related docs updates; rebuild and restart MCP clients.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/storage.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/mutation.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/run.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Add a committed MCP integration test suite (`npm test`), support isolated DB override via `MCP_HUB_DB_PATH`, and harden `adr.create` path parsing.
+- **CONTEXT:** Ad-hoc smoke checks were not sufficient for repeatable confidence; tests exposed a real parser bug where `adr.create` could return the `Updated:` line instead of the created ADR file path.
+- **CONSEQUENCES:** Validation now runs end-to-end with deterministic assertions over all 28 tools, including edge-case failures; test runs avoid polluting the default SQLite store by using a temporary DB path.
+- **ROLLBACK:** Remove `tests/mcp_v02.integration.test.mjs`, remove `test` script in `package.json`, revert `MCP_HUB_DB_PATH` support in `src/server.ts`, and restore prior `adr.create` stdout parsing logic.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/tests/mcp_v02.integration.test.mjs, /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/adr.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

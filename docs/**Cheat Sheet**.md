@@ -9,6 +9,13 @@ npm run build
 npm run start:stdio
 ```
 
+**Run Full Validation**
+```bash
+cd /Users/dan.driver/Cursor_projects/python/SERVUS
+nvm use 22
+npm test
+```
+
 **Run (HTTP mode)**
 ```bash
 cd /Users/dan.driver/Cursor_projects/python/SERVUS
@@ -20,6 +27,7 @@ npm run start:http
 **Env (local defaults)**
 - Token and origins live in `/Users/dan.driver/Cursor_projects/python/SERVUS/.env`.
 - Defaults are in `/Users/dan.driver/Cursor_projects/python/SERVUS/.env.example`.
+- SQLite defaults to `/Users/dan.driver/Cursor_projects/python/SERVUS/data/hub.sqlite` and can be overridden with `MCP_HUB_DB_PATH`.
 - Required for HTTP:
   - `MCP_HTTP_BEARER_TOKEN`
   - `MCP_HTTP_ALLOWED_ORIGINS`

@@ -37,7 +37,10 @@ const envPath = process.env.DOTENV_CONFIG_PATH
   : path.join(repoRoot, ".env");
 dotenv.config({ path: envPath });
 
-const storage = new Storage(path.join(repoRoot, "data", "hub.sqlite"));
+const storagePath = process.env.MCP_HUB_DB_PATH
+  ? path.resolve(process.env.MCP_HUB_DB_PATH)
+  : path.join(repoRoot, "data", "hub.sqlite");
+const storage = new Storage(storagePath);
 storage.init();
 
 const server = new Server(

@@ -13,6 +13,7 @@ This document outlines the comprehensive inspection plan to verify that SERVUS i
 
 Run these checks when validating local IDE continuity infrastructure:
 
+- Run `npm test` in the repo root to execute the MCP integration suite against an isolated temporary database.
 - `health.tools` should report the expected local toolset.
 - `policy.evaluate` should block destructive operations against protected targets.
 - `run.begin`/`run.step`/`run.end` should produce an append-only timeline retrievable via `run.timeline`.

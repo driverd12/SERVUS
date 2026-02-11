@@ -24,14 +24,29 @@ export function createAdr(input: z.infer<typeof adrCreateSchema>, repoRoot = pro
   const ok = result.status === 0;
   logEvent("adr.create", { ok, status: result.status, stdout: truncate(stdout) });
 
-  let pathValue: string | null = null;
+  let createdPath: string | null = null;
+  let updatedPath: string | null = null;
   if (stdout) {
     const lines = stdout.split(/\r?\n/).filter(Boolean);
-    pathValue = lines[lines.length - 1] ?? null;
+    for (const line of lines) {
+      const createdMatch = line.match(/^Created:\s+(.+)$/i);
+      if (createdMatch) {
+        createdPath = createdMatch[1]?.trim() ?? null;
+        continue;
+      }
+      const updatedMatch = line.match(/^Updated:\s+(.+)$/i);
+      if (updatedMatch) {
+        updatedPath = updatedMatch[1]?.trim() ?? null;
+      }
+    }
+    if (!createdPath) {
+      createdPath = lines[0] ?? null;
+    }
   }
 
   return {
-    path: pathValue ? path.resolve(pathValue) : null,
+    path: createdPath ? path.resolve(createdPath) : null,
+    index_path: updatedPath ? path.resolve(updatedPath) : undefined,
     ok,
     stderr_trunc: stderr || undefined,
   };

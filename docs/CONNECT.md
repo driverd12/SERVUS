@@ -24,6 +24,7 @@ Use your client to connect via STDIO:
 Notes:
 
 - The server loads `.env` from the repo root automatically. Set `DOTENV_CONFIG_PATH=/path/to/.env` to override.
+- The SQLite path defaults to `/Users/dan.driver/Cursor_projects/python/SERVUS/data/hub.sqlite`. Set `MCP_HUB_DB_PATH=/absolute/path/to/hub.sqlite` to override (useful for isolated test runs).
 - Use the direct `node /Users/dan.driver/Cursor_projects/python/SERVUS/dist/server.js` command (no `-r dotenv/config`) so clients that do not set `cwd` can resolve dependencies.
 - API keys are not required for local continuity workflows.
 
@@ -54,6 +55,17 @@ MCP_HTTP_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
 
 - SQLite data lives at `./data/hub.sqlite` (plus `-wal` and `-shm`).
 - To move to a new machine, copy the entire `data/` directory and your `.env`.
+- If you use `MCP_HUB_DB_PATH`, migrate that custom SQLite file instead.
+
+## Validation
+
+Run the full local MCP integration suite:
+
+```bash
+npm test
+```
+
+This command rebuilds the server and executes end-to-end tool tests against a temporary isolated SQLite database.
 
 ## Tool Overview
 

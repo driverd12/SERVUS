@@ -1,6 +1,6 @@
 {
   "name": "mcp-playground-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test ./tests/*.test.mjs",
     "start": "node dist/server.js",
     "start:stdio": "node dist/server.js",
     "start:http": "MCP_HTTP=1 node dist/server.js --http --http-port 8787"

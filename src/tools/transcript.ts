@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { Storage, TranscriptRecord } from "../storage.js";
+import { mutationSchema } from "./mutation.js";
 
 export const transcriptAppendSchema = z.object({
+  mutation: mutationSchema,
   session_id: z.string().min(1),
   source_client: z.string().min(1),
   source_model: z.string().optional(),
@@ -11,6 +13,7 @@ export const transcriptAppendSchema = z.object({
 });
 
 export const transcriptSummarizeSchema = z.object({
+  mutation: mutationSchema,
   session_id: z.string().min(1),
   provider: z.enum(["openai", "gemini", "auto"]).optional(),
   max_points: z.number().int().min(3).max(20).optional(),
@@ -45,8 +48,9 @@ export async function summarizeTranscript(
     tags: ["summary", "transcript", "local"],
     source: `transcript:${input.session_id}`,
     source_client: "mcp-playground-hub",
-    source_model: "local-deterministic-v1",
+    source_model: "local-deterministic-v2",
     source_agent: "transcript.summarize",
+    trust_tier: "verified",
   });
 
   return {

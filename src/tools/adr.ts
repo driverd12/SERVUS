@@ -2,8 +2,10 @@ import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { logEvent, truncate } from "../utils.js";
+import { mutationSchema } from "./mutation.js";
 
 export const adrCreateSchema = z.object({
+  mutation: mutationSchema,
   title: z.string().min(1),
   status: z.string().min(1),
 });

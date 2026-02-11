@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { Storage } from "../storage.js";
 
+const trustTierSchema = z.enum(["raw", "verified", "policy-backed", "deprecated"]);
+
 export const whoKnowsSchema = z.object({
   query: z.string().min(1),
   tags: z.array(z.string()).optional(),
@@ -8,6 +10,7 @@ export const whoKnowsSchema = z.object({
   source_client: z.string().optional(),
   source_model: z.string().optional(),
   source_agent: z.string().optional(),
+  trust_tiers: z.array(trustTierSchema).optional(),
   include_notes: z.boolean().optional(),
   include_transcripts: z.boolean().optional(),
   limit: z.number().int().min(1).max(50).optional(),
@@ -26,6 +29,7 @@ export async function whoKnows(storage: Storage, input: z.infer<typeof whoKnowsS
         source_client: input.source_client,
         source_model: input.source_model,
         source_agent: input.source_agent,
+        trust_tiers: input.trust_tiers,
         limit,
       })
     : [];
@@ -50,6 +54,7 @@ export async function whoKnows(storage: Storage, input: z.infer<typeof whoKnowsS
       source_client: note.source_client,
       source_model: note.source_model,
       source_agent: note.source_agent,
+      trust_tier: note.trust_tier,
       score: note.score ?? 0,
       text: note.text,
     })),

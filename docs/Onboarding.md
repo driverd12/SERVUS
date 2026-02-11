@@ -4,6 +4,10 @@ The opposite of [[Offboarding]]!
 
 - Shared IDE continuity now uses the local MCP hub as the source of truth.
 - Use `transcript.append` for step-level capture and `transcript.summarize` for local deterministic checkpoints.
+- For mutating actions, include `mutation.idempotency_key` and `mutation.side_effect_fingerprint`.
+- For execution traceability, record long operations with `run.begin`, `run.step`, and `run.end`.
+- Gate risky changes with `policy.evaluate`, `preflight.check`, and `postflight.verify`.
+- Use `lock.acquire`/`lock.release` when multiple agents may touch the same target.
 - Use attribution fields on writes to track contributor identity:
   - `source_client` (e.g. `cursor`, `codex`)
   - `source_model` (e.g. model identifier in use)

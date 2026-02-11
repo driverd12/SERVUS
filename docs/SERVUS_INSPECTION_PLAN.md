@@ -9,6 +9,17 @@
 ## 1. Overview
 This document outlines the comprehensive inspection plan to verify that SERVUS is "plumbed and wired" correctly from end-to-end. The goal is to ensure continuity across all platforms before moving to production.
 
+## 1.1 MCP v0.2 Continuity Checks
+
+Run these checks when validating local IDE continuity infrastructure:
+
+- `health.tools` should report the expected local toolset.
+- `policy.evaluate` should block destructive operations against protected targets.
+- `run.begin`/`run.step`/`run.end` should produce an append-only timeline retrievable via `run.timeline`.
+- Mutating tools should reject missing or conflicting idempotency metadata (`mutation.check` can preflight this).
+- `retrieval.hybrid` and `query.plan` should return citation-backed local evidence.
+- `incident.open` and `incident.timeline` should preserve operational breadcrumbs for follow-up work.
+
 ## 2. Architecture Review (The "Wiring")
 
 ### A. Inputs & Triggers

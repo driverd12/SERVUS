@@ -38,6 +38,22 @@ npm run start:http
 - `transcript.append`, `transcript.summarize`
 - `adr.create`
 - `who_knows`, `knowledge.query`
+- `policy.evaluate`
+- `run.begin`, `run.step`, `run.end`, `run.timeline`
+- `mutation.check`
+- `preflight.check`, `postflight.verify`
+- `lock.acquire`, `lock.release`
+- `knowledge.promote`, `knowledge.decay`
+- `retrieval.hybrid`
+- `decision.link`
+- `simulate.workflow`
+- `health.tools`, `health.storage`, `health.policy`
+- `incident.open`, `incident.timeline`
+- `query.plan`
+
+**Mutating tools require idempotency metadata**
+- `mutation.idempotency_key`
+- `mutation.side_effect_fingerprint`
 
 **Attribution fields (who wrote the entry)**
 - `source_client` (e.g. `cursor`, `codex`)

@@ -18,6 +18,8 @@
 - Uses SQLite WAL mode for durability.
 - Logs are emitted to stderr only.
 - No secrets are persisted to disk by default.
+- Mutating MCP tools are journaled with idempotency metadata (`idempotency_key` + `side_effect_fingerprint`).
+- Policy evaluations, run events, and incident timelines are persisted for auditability.
 
 ## External Providers
 

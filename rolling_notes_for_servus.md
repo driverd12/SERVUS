@@ -59,3 +59,9 @@
 - **CONSEQUENCES:** `knowledge.query` and `who_knows` now query local notes/transcripts only; `transcript.summarize` is deterministic/local; notes and transcripts can record `source_client`, `source_model`, and `source_agent`.
 - **ROLLBACK:** Revert `src/server.ts`, `src/tools/transcript.ts`, `src/tools/who_knows.ts`, `src/tools/memory.ts`, `src/storage.ts`, and docs updates, then rebuild.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/transcript.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/who_knows.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/storage.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Ship MCP v0.2 orchestration tools with local policy gates, run ledgering, lock leasing, incidents, and idempotent mutation journaling.
+- **CONTEXT:** Need stronger predictability, replay safety, and cross-agent continuity for concurrent Cursor/Codex work without relying on cloud provider tooling.
+- **CONSEQUENCES:** Added 21 local MCP tools and new SQLite tables for policy evaluations, run events, mutation journal, locks, decisions, and incidents; mutating tools now require `mutation.idempotency_key` and `mutation.side_effect_fingerprint`.
+- **ROLLBACK:** Revert `src/server.ts`, `src/storage.ts`, new tool modules under `src/tools/`, and related docs updates; rebuild and restart MCP clients.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/storage.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/mutation.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/run.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md

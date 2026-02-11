@@ -144,23 +144,25 @@ def deactivate_user(context):
     # 1. Find User ID
     user_id = _lookup_user_by_email(email)
     
-    # 2. Check if already deactivated (if not found by email, or found but deleted)
-    # Note: _lookup_user_by_email returns ID if found and active.
-    # If not found, we can't be sure if they are deleted or just missing.
-    # But for offboarding, "not found" is a success state.
-    
     if not user_id:
-        # Try to find if they are already deactivated
-        # Slack API users.lookupByEmail does NOT return deleted users usually.
+        # If not found, it might be due to auth error or actually not found.
+        # We need to be careful not to return True on Auth Error.
+        # _lookup_user_by_email returns None on error.
+        # We should verify if the token is valid first or handle error in lookup.
+        
+        # Let's try a simple auth test to distinguish
+        try:
+            auth_test = requests.post("https://slack.com/api/auth.test", headers=_get_headers())
+            if not auth_test.json().get("ok"):
+                logger.error(f"❌ Slack Auth Failed: {auth_test.json().get('error')}")
+                return False
+        except:
+            pass
+
         logger.warning(f"⚠️ Slack: User {email} not found (May already be deactivated).")
         return True 
 
-    # Check if user is already deleted (if lookup returns deleted users, which it might depending on token)
-    # We need to fetch the full user object to be sure.
-    # But _lookup_user_by_email only returns ID.
-    # Let's trust that if we got an ID, they are likely active or we can check status.
-    
-    # Fetch full info to check 'deleted' flag
+    # Check if user is already deleted
     try:
         info_url = f"https://slack.com/api/users.info?user={user_id}"
         r = requests.get(info_url, headers=_get_headers())
@@ -169,7 +171,7 @@ def deactivate_user(context):
             logger.info(f"✅ Slack: User {email} is ALREADY deactivated.")
             return True
     except Exception:
-        pass # Fall through to attempt deactivation
+        pass 
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would deactivate Slack user {user_id}")
@@ -177,17 +179,30 @@ def deactivate_user(context):
 
     # 2. Deactivate via SCIM API (DELETE /Users/{id})
     # Note: This requires an Admin token with SCIM scopes or a Grid Admin token.
+    # If SCIM is not enabled, we might need to use users.admin.setInactive (Legacy)
     url = f"https://api.slack.com/scim/v1/Users/{user_id}"
     headers = _get_headers()
     
     try:
         resp = requests.delete(url, headers=headers)
         if resp.status_code == 200 or resp.status_code == 204:
-            logger.info(f"✅ Slack: User {email} deactivated.")
+            logger.info(f"✅ Slack: User {email} deactivated (SCIM).")
             return True
         else:
-            logger.error(f"❌ Slack Deactivation Failed ({resp.status_code}): {resp.text}")
-            return False
+            # Fallback to Legacy Admin API if SCIM fails (e.g. 404/403/501)
+            logger.warning(f"⚠️ Slack SCIM Deactivation failed ({resp.status_code}). Trying Legacy API...")
+            
+            legacy_url = "https://slack.com/api/users.admin.setInactive"
+            legacy_resp = requests.post(legacy_url, headers=headers, data={"user": user_id})
+            legacy_data = legacy_resp.json()
+            
+            if legacy_data.get("ok"):
+                logger.info(f"✅ Slack: User {email} deactivated (Legacy API).")
+                return True
+            else:
+                logger.error(f"❌ Slack Deactivation Failed: {legacy_data.get('error')}")
+                return False
+                
     except Exception as e:
         logger.error(f"❌ Slack Connection Error: {e}")
         return False

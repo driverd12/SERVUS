@@ -15,6 +15,18 @@ import {
 } from "./tools/transcript.js";
 import { adrCreateSchema, createAdr } from "./tools/adr.js";
 import { whoKnows, whoKnowsSchema } from "./tools/who_knows.js";
+import { policyEvaluateSchema, evaluatePolicy } from "./tools/policy.js";
+import { runBegin, runBeginSchema, runEnd, runEndSchema, runStep, runStepSchema, runTimeline, runTimelineSchema } from "./tools/run.js";
+import { mutationCheck, mutationCheckSchema } from "./tools/idempotency.js";
+import { preflightCheck, preflightCheckSchema, postflightVerify, postflightVerifySchema } from "./tools/verification.js";
+import { acquireLock, lockAcquireSchema, lockReleaseSchema, releaseLock } from "./tools/locks.js";
+import { knowledgeDecay, knowledgeDecaySchema, knowledgePromote, knowledgePromoteSchema, retrievalHybrid, retrievalHybridSchema } from "./tools/knowledge.js";
+import { decisionLink, decisionLinkSchema } from "./tools/decision.js";
+import { simulateWorkflow, simulateWorkflowSchema } from "./tools/simulate.js";
+import { healthPolicy, healthPolicySchema, healthStorage, healthStorageSchema, healthTools, healthToolsSchema } from "./tools/health.js";
+import { incidentOpen, incidentOpenSchema, incidentTimeline, incidentTimelineSchema } from "./tools/incident.js";
+import { queryPlan, queryPlanSchema } from "./tools/query_plan.js";
+import { runIdempotentMutation } from "./tools/mutation.js";
 import { startStdioTransport } from "./transports/stdio.js";
 import { startHttpTransport } from "./transports/http.js";
 import { truncate } from "./utils.js";
@@ -31,7 +43,7 @@ storage.init();
 const server = new Server(
   {
     name: "mcp-playground-hub",
-    version: "0.1.0",
+    version: "0.2.0",
   },
   {
     capabilities: {
@@ -49,8 +61,6 @@ type ToolEntry = {
 const toolRegistry = new Map<string, ToolEntry>();
 
 function registerTool(name: string, description: string, schema: z.ZodTypeAny, handler: ToolEntry["handler"]) {
-  // MCP requires inputSchema to be an object schema at the root.
-  // `$refStrategy: "none"` inlines the object instead of returning a root `$ref`.
   const tool: Tool = {
     name,
     description,
@@ -59,35 +69,175 @@ function registerTool(name: string, description: string, schema: z.ZodTypeAny, h
   toolRegistry.set(name, { schema, tool, handler });
 }
 
-registerTool("memory.append", "Append a memory note.", memoryAppendSchema, (input) =>
-  appendMemory(storage, input)
+registerTool("memory.append", "Append a memory note with trust tier metadata.", memoryAppendSchema, (input) =>
+  runIdempotentMutation({
+    storage,
+    tool_name: "memory.append",
+    mutation: input.mutation,
+    payload: input,
+    execute: () => appendMemory(storage, input),
+  })
 );
 
-registerTool("memory.search", "Search memory notes.", memorySearchSchema, (input) =>
+registerTool("memory.search", "Search memory notes with actor and trust filters.", memorySearchSchema, (input) =>
   searchMemory(storage, input)
 );
 
-registerTool("transcript.append", "Append a transcript entry.", transcriptAppendSchema, (input) =>
-  appendTranscript(storage, input)
+registerTool("transcript.append", "Append a transcript entry with actor attribution.", transcriptAppendSchema, (input) =>
+  runIdempotentMutation({
+    storage,
+    tool_name: "transcript.append",
+    mutation: input.mutation,
+    payload: input,
+    execute: () => appendTranscript(storage, input),
+  })
 );
 
 registerTool(
   "transcript.summarize",
   "Generate a deterministic local summary for a transcript session and store it as a memory note.",
   transcriptSummarizeSchema,
-  (input) => summarizeTranscript(storage, input)
+  (input) =>
+    runIdempotentMutation({
+      storage,
+      tool_name: "transcript.summarize",
+      mutation: input.mutation,
+      payload: input,
+      execute: () => summarizeTranscript(storage, input),
+    })
 );
 
 registerTool("adr.create", "Create an ADR file using scripts/new_adr.py.", adrCreateSchema, (input) =>
-  createAdr(input, repoRoot)
+  runIdempotentMutation({
+    storage,
+    tool_name: "adr.create",
+    mutation: input.mutation,
+    payload: input,
+    execute: () => createAdr(input, repoRoot),
+  })
 );
 
-registerTool("who_knows", "Search local notes and transcripts in the shared MCP knowledge base.", whoKnowsSchema, (input) =>
-  whoKnows(storage, input)
+registerTool(
+  "who_knows",
+  "Search local notes and transcripts in the shared MCP knowledge base.",
+  whoKnowsSchema,
+  (input) => whoKnows(storage, input)
 );
 
-registerTool("knowledge.query", "Query local notes and transcripts in the shared MCP knowledge base.", whoKnowsSchema, (input) =>
-  whoKnows(storage, input)
+registerTool(
+  "knowledge.query",
+  "Query local notes and transcripts in the shared MCP knowledge base.",
+  whoKnowsSchema,
+  (input) => whoKnows(storage, input)
+);
+
+registerTool(
+  "policy.evaluate",
+  "Evaluate a proposed action against local SERVUS policy rules.",
+  policyEvaluateSchema,
+  (input) =>
+    runIdempotentMutation({
+      storage,
+      tool_name: "policy.evaluate",
+      mutation: input.mutation,
+      payload: input,
+      execute: () => evaluatePolicy(storage, input),
+    })
+);
+
+registerTool("run.begin", "Start an append-only execution run ledger.", runBeginSchema, (input) =>
+  runBegin(storage, input)
+);
+
+registerTool("run.step", "Append a step event to an execution run ledger.", runStepSchema, (input) =>
+  runStep(storage, input)
+);
+
+registerTool("run.end", "Finalize an execution run ledger.", runEndSchema, (input) =>
+  runEnd(storage, input)
+);
+
+registerTool("run.timeline", "Read the timeline for an execution run ledger.", runTimelineSchema, (input) =>
+  runTimeline(storage, input)
+);
+
+registerTool(
+  "mutation.check",
+  "Validate idempotency metadata against recorded mutation journal state.",
+  mutationCheckSchema,
+  (input) => mutationCheck(storage, input)
+);
+
+registerTool(
+  "preflight.check",
+  "Validate prerequisites and invariants before mutating actions.",
+  preflightCheckSchema,
+  (input) => preflightCheck(input)
+);
+
+registerTool(
+  "postflight.verify",
+  "Verify post-action assertions after mutating actions.",
+  postflightVerifySchema,
+  (input) => postflightVerify(input)
+);
+
+registerTool("lock.acquire", "Acquire or renew a lease-based lock.", lockAcquireSchema, (input) =>
+  acquireLock(storage, input)
+);
+
+registerTool("lock.release", "Release a lease-based lock.", lockReleaseSchema, (input) =>
+  releaseLock(storage, input)
+);
+
+registerTool("knowledge.promote", "Promote transcript or note content into durable knowledge.", knowledgePromoteSchema, (input) =>
+  knowledgePromote(storage, input)
+);
+
+registerTool("knowledge.decay", "Apply trust tier decay policy to stale notes.", knowledgeDecaySchema, (input) =>
+  knowledgeDecay(storage, input)
+);
+
+registerTool(
+  "retrieval.hybrid",
+  "Run local hybrid retrieval with citation-rich results.",
+  retrievalHybridSchema,
+  (input) => retrievalHybrid(storage, input)
+);
+
+registerTool("decision.link", "Record a decision and link it to an entity.", decisionLinkSchema, (input) =>
+  decisionLink(storage, input)
+);
+
+registerTool(
+  "simulate.workflow",
+  "Run deterministic workflow simulation for onboard/offboard scenarios.",
+  simulateWorkflowSchema,
+  (input) => simulateWorkflow(input)
+);
+
+registerTool("health.tools", "Check tool registry health.", healthToolsSchema, () =>
+  healthTools(Array.from(toolRegistry.keys()))
+);
+
+registerTool("health.storage", "Check local storage health.", healthStorageSchema, () =>
+  healthStorage(storage)
+);
+
+registerTool("health.policy", "Check policy subsystem health and guardrails.", healthPolicySchema, () =>
+  healthPolicy()
+);
+
+registerTool("incident.open", "Create a local incident record with opening timeline event.", incidentOpenSchema, (input) =>
+  incidentOpen(storage, input)
+);
+
+registerTool("incident.timeline", "Read incident timeline events.", incidentTimelineSchema, (input) =>
+  incidentTimeline(storage, input)
+);
+
+registerTool("query.plan", "Produce a confidence-scored query plan with evidence citations.", queryPlanSchema, (input) =>
+  queryPlan(storage, input)
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({

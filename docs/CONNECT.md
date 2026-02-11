@@ -57,10 +57,25 @@ MCP_HTTP_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
 
 ## Tool Overview
 
+Core continuity tools:
 - `memory.append`, `memory.search`
 - `transcript.append`, `transcript.summarize`
 - `adr.create`
 - `who_knows`, `knowledge.query`
+
+v0.2 orchestration and safety tools:
+- `policy.evaluate`
+- `run.begin`, `run.step`, `run.end`, `run.timeline`
+- `mutation.check`
+- `preflight.check`, `postflight.verify`
+- `lock.acquire`, `lock.release`
+- `knowledge.promote`, `knowledge.decay`
+- `retrieval.hybrid`
+- `decision.link`
+- `simulate.workflow`
+- `health.tools`, `health.storage`, `health.policy`
+- `incident.open`, `incident.timeline`
+- `query.plan`
 
 ## Local-Only Knowledge Mode
 
@@ -71,3 +86,6 @@ MCP_HTTP_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
   - `source_client` (for example: `cursor`, `codex`)
   - `source_model` (for example: `claude-opus-4.1`, `gpt-5.3-codex`)
   - `source_agent` (for example: `assistant`, `planner`, `reviewer`)
+- Mutating tools require:
+  - `mutation.idempotency_key`
+  - `mutation.side_effect_fingerprint`

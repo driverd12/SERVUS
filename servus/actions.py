@@ -3,6 +3,9 @@ from .integrations import ad
 from .integrations import okta
 from .integrations import google_gam
 from .integrations import slack
+from .integrations import zoom
+from .integrations import ramp
+from .integrations import linear
 from . import actions_builtin as builtin
 
 # Registry mapping YAML strings to Python functions
@@ -26,8 +29,19 @@ ACTIONS = {
     "google_gam.move_user_ou": google_gam.move_user_ou,
     "google_gam.add_groups": google_gam.add_groups,
     "google_gam.deprovision_user": google_gam.deprovision_user,
+    "google_gam.process_rehire": google_gam.process_rehire,
     
     # Slack
     "slack.add_to_channels": slack.add_to_channels,
     "slack.deactivate_user": slack.deactivate_user,
+
+    # Zoom
+    "zoom.configure_user": zoom.configure_user,
+
+    # Ramp
+    "ramp.configure_user": ramp.configure_user,
+
+    # Linear
+    "linear.provision_user": linear.provision_user,
+    "linear.verify_deprovisioned": linear.verify_deprovisioned,
 }

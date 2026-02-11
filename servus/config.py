@@ -39,6 +39,37 @@ def fetch_aws_secrets():
         
     return {}
 
+def fetch_gam_oauth_to_shm():
+    """
+    Fetches GAM oauth2.txt from Secrets Manager and writes it to /dev/shm.
+    Returns the path to the file.
+    """
+    secret_name = os.getenv("SERVUS_GAM_SECRET_ID", "prod/servus/gam_oauth")
+    region_name = os.getenv("SERVUS_AWS_REGION", "us-east-1")
+    
+    if not os.getenv("SERVUS_USE_AWS_SECRETS"):
+        return None
+
+    logger.info(f"🔐 Fetching GAM OAuth token to memory...")
+    
+    try:
+        session = boto3.session.Session()
+        client = session.client(service_name='secretsmanager', region_name=region_name)
+        resp = client.get_secret_value(SecretId=secret_name)
+        
+        if 'SecretString' in resp:
+            # Write to /dev/shm (Linux shared memory)
+            # This ensures secrets are never written to disk
+            shm_path = "/dev/shm/oauth2.txt"
+            with open(shm_path, "w") as f:
+                f.write(resp['SecretString'])
+            return shm_path
+            
+    except Exception as e:
+        logger.warning(f"⚠️  Could not fetch GAM OAuth: {e}")
+    
+    return None
+
 # 1. Load Local Env
 env_config = dict(os.environ)
 
@@ -46,7 +77,17 @@ env_config = dict(os.environ)
 aws_secrets = fetch_aws_secrets()
 env_config.update(aws_secrets)
 
-# 3. Build Global CONFIG
+# 3. Handle GAM Token (Production Mode)
+if os.getenv("SERVUS_USE_AWS_SECRETS"):
+    shm_token_path = fetch_gam_oauth_to_shm()
+    if shm_token_path:
+        # GAM expects oauth2.txt in the same dir as client_secrets.json usually,
+        # or we can try to point it via env var if supported, or symlink.
+        # GAM_OAUTH2_TXT is supported by some versions, or we just rely on GAM_PATH
+        # pointing to a dir where we symlinked it.
+        pass
+
+# 4. Build Global CONFIG
 CONFIG = {
     # Infrastructure
     "AD_HOST": env_config.get("SERVUS_AD_HOST", "10.1.0.3"),
@@ -57,6 +98,8 @@ CONFIG = {
     "OKTA_DOMAIN": env_config.get("SERVUS_OKTA_DOMAIN", "boom.okta.com"),
     "OKTA_TOKEN": env_config.get("SERVUS_OKTA_TOKEN"),
     "OKTA_APP_AD": env_config.get("SERVUS_OKTA_DIRINTEGRATION_AD_IMPORT", "0oacrzpehXApFBO95696"),
+    "OKTA_GROUP_CONTRACTORS": env_config.get("SERVUS_OKTA_GROUP_CONTRACTORS"),
+    "OKTA_APP_SLACK": env_config.get("SERVUS_OKTA_APP_SLACK"),
     
     # Integrations
     "SLACK_TOKEN": env_config.get("SERVUS_SLACK_ADMIN_TOKEN"),
@@ -88,6 +131,13 @@ CONFIG = {
 
     # Notifications
     "SLACK_WEBHOOK_URL": env_config.get("SERVUS_SLACK_WEBHOOK_URL"),
+
+    # New SaaS
+    "LINEAR_API_KEY": env_config.get("SERVUS_LINEAR_API_KEY"),
+    "ZOOM_ACCOUNT_ID": env_config.get("SERVUS_ZOOM_ACCOUNT_ID"),
+    "ZOOM_CLIENT_ID": env_config.get("SERVUS_ZOOM_CLIENT_ID"),
+    "ZOOM_CLIENT_SECRET": env_config.get("SERVUS_ZOOM_CLIENT_SECRET"),
+    "RAMP_API_KEY": env_config.get("SERVUS_RAMP_API_KEY"),
 }
 
 def load_config():

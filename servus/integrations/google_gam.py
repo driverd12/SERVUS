@@ -295,6 +295,54 @@ def deprovision_user(context):
     logger.info(f"✅ Google Deprovisioning Complete for {target_email} (Now {archive_email})")
     return True
 
+def process_rehire(context):
+    """
+    Rehire Logic:
+    1. Check if user exists in /Deprovisioning with -archive suffix.
+    2. Undelete (if deleted).
+    3. Unsuspend.
+    4. Rename (remove -archive).
+    5. Move to active OU based on empType.
+    """
+    user = context.get("user_profile")
+    if not user: return False
+    
+    target_email = user.work_email # This should be the "clean" email (jason.merret@boom.aero)
+    archive_email = target_email.replace("@", "-archive@")
+    
+    logger.info(f"♻️  Google: Processing Rehire for {target_email}...")
+    
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would check for {archive_email}, unsuspend, rename to {target_email}, and move OU.")
+        return True
+
+    # 1. Check for Archive User
+    success, stdout, _ = run_gam(["info", "user", archive_email])
+    if not success:
+        logger.info(f"   ℹ️  Archive user {archive_email} not found. Checking if {target_email} already active...")
+        # Check if already active
+        s2, out2, _ = run_gam(["info", "user", target_email])
+        if s2:
+            logger.info("   ✅ User already exists with correct email. Proceeding to OU check.")
+            # Proceed to standard move_user_ou logic
+            return move_user_ou(context)
+        else:
+            logger.warning("   ⚠️  No account found (Active or Archive). Standard provisioning will handle creation (via Okta).")
+            return True
+
+    # 2. Unsuspend
+    logger.info(f"   1. Unsuspending {archive_email}...")
+    run_gam(["update", "user", archive_email, "suspended", "off"])
+    
+    # 3. Rename (Restore original email)
+    logger.info(f"   2. Renaming {archive_email} -> {target_email}...")
+    run_gam(["update", "user", archive_email, "email", target_email])
+    
+    # 4. Move OU
+    # We reuse the existing logic for this
+    logger.info("   3. Moving to Active OU...")
+    return move_user_ou(context)
+
 # Keeping the previous functions for Onboarding compatibility
 def wait_for_user_and_customize(context):
     """

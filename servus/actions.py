@@ -24,6 +24,7 @@ ACTIONS = {
     "okta.find_user": okta.wait_for_user, # Remapped to wait loop
     "okta.assign_apps": okta.assign_custom_groups, # Remapped to group assignment
     "okta.deactivate_user": okta.deactivate_user,
+    "okta.verify_manager_resolved": okta.verify_manager_resolved,
     
     # Google (GAM)
     "google_gam.move_user_ou": google_gam.move_user_ou,

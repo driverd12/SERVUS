@@ -130,6 +130,43 @@ def assign_custom_groups(context):
 
     return True
 
+def verify_manager_resolved(context):
+    """
+    Checks if the user has a manager assigned in Okta.
+    This is critical for AD sync to succeed.
+    """
+    user_profile = context.get("user_profile")
+    if not user_profile: return False
+    
+    client = OktaClient()
+    email = user_profile.work_email
+    
+    logger.info(f"⏳ Okta: Verifying manager resolution for {email}...")
+    
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would check if manager is assigned in Okta.")
+        return True
+
+    # Poll for manager attribute
+    max_retries = 10
+    for i in range(max_retries):
+        user = client.get_user(email)
+        if user:
+            # Check profile.manager or profile.managerId depending on mapping
+            # Usually mapped to 'manager' in profile
+            profile = user.get("profile", {})
+            manager = profile.get("manager") or profile.get("managerId")
+            
+            if manager:
+                logger.info(f"✅ Okta: Manager resolved: {manager}")
+                return True
+        
+        logger.info(f"   ... Waiting for manager assignment ({i+1}/{max_retries})...")
+        time.sleep(10)
+        
+    logger.warning("⚠️ Okta: Manager not resolved after timeout. AD sync might fail.")
+    return False # Or True if we want to be non-blocking
+
 def deactivate_user(context):
     """
     Deactivates a user in Okta.

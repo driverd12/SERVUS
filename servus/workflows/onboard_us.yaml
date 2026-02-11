@@ -7,43 +7,67 @@ steps:
     type: action
     action: builtin.validate_profile
 
-  # 2. AD Wait (Passive Check)
+  # 2. Okta Manager Check (Critical for AD Sync)
+  - id: okta_manager_check
+    description: "Okta: Verify manager attribute is resolved"
+    type: action
+    action: okta.verify_manager_resolved
+
+  # 3. AD Wait (Passive Check)
   - id: ad_wait
     description: "AD: Check if user exists (synced from Okta)"
     type: action
     action: ad.validate_user_exists
 
-  # 3. Google Wait
+  # 4. Google Wait
   - id: google_wait
     description: "Google: Wait for SCIM to create user"
     type: action
     action: google_gam.wait_for_user_scim
 
-  # 4. Google Customize (OU Move)
+  # 5. Google Customize (OU Move)
   - id: google_move_ou
     description: "Google: Move to correct OU"
     type: action
     action: google_gam.move_user_ou
 
-  # 5. Google Groups
+  # 6. Google Groups
   - id: google_groups
     description: "Google: Add to groups"
     type: action
     action: google_gam.add_groups
 
-  # 6. Slack Customize
+  # 7. Slack Customize
   - id: slack_customize
     description: "Slack: Add to channels"
     type: action
     action: slack.add_to_channels
 
-  # 7. Device Check (Apple)
+  # 8. Zoom License
+  - id: zoom_config
+    description: "Zoom: Assign license based on role"
+    type: action
+    action: zoom.configure_user
+
+  # 9. Ramp Spend Profile
+  - id: ramp_config
+    description: "Ramp: Assign spend profile"
+    type: action
+    action: ramp.configure_user
+
+  # 10. Linear Invite
+  - id: linear_invite
+    description: "Linear: Invite to workspace"
+    type: action
+    action: linear.provision_user
+
+  # 11. Device Check (Apple)
   - id: check_device
     description: "Apple: Check device assignment in ABM"
     type: action
     action: apple.check_device_assignment
 
-  # 8. Physical Access (Brivo)
+  # 12. Physical Access (Brivo)
   - id: physical_access
     description: "Brivo: Queue badge print job (Manual binding required)"
     type: action

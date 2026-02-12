@@ -38,6 +38,7 @@ BASE_COLUMNS = [
     "location",
     "confirmation_source_a",
     "confirmation_source_b",
+    "allow_before_start_date",
     "reason",
     "last_error",
     "created_at",
@@ -51,7 +52,8 @@ class ManualOverrideRequest:
     user_profile: UserProfile
     confirmation_source_a: str
     confirmation_source_b: str
-    reason: Optional[str]
+    reason: Optional[str] = None
+    allow_before_start_date: bool = False
 
     @property
     def dedupe_key(self) -> str:
@@ -74,6 +76,7 @@ class ManualOverrideRequest:
             "location": self.user_profile.location or "US",
             "confirmation_source_a": self.confirmation_source_a,
             "confirmation_source_b": self.confirmation_source_b,
+            "allow_before_start_date": "true" if self.allow_before_start_date else "false",
             "reason": self.reason or "",
             "last_error": "",
             "created_at": now,
@@ -224,6 +227,7 @@ def _parse_request(row: Dict[str, str]) -> ManualOverrideRequest:
         user_profile=user,
         confirmation_source_a=source_a,
         confirmation_source_b=source_b,
+        allow_before_start_date=_parse_bool_field(row.get("allow_before_start_date")),
         reason=_optional_value(row.get("reason")),
     )
 
@@ -233,6 +237,11 @@ def _optional_value(value: Optional[str]) -> Optional[str]:
         return None
     normalized = value.strip()
     return normalized if normalized else None
+
+
+def _parse_bool_field(value: Optional[str]) -> bool:
+    normalized = (value or "").strip().lower()
+    return normalized in {"1", "true", "yes", "y", "on"}
 
 
 def _read_rows(csv_path: str) -> Tuple[List[Dict[str, str]], List[str]]:

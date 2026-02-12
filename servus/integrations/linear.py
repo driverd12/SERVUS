@@ -24,8 +24,14 @@ class LinearClient:
                 headers=self.headers,
                 json={"query": query, "variables": variables}
             )
-            response.raise_for_status()
-            return response.json()
+            payload = response.json()
+            if response.status_code >= 400:
+                logger.error(
+                    "❌ Linear HTTP Error: status=%s payload=%s",
+                    response.status_code,
+                    payload,
+                )
+            return payload
         except Exception as e:
             logger.error(f"❌ Linear API Error: {e}")
             return None
@@ -49,16 +55,15 @@ class LinearClient:
         
         if result and result.get("data", {}).get("userInvite", {}).get("success"):
             logger.info(f"✅ Linear: Invited {email}")
-            return True
-        else:
-            # Check if already exists
-            errors = result.get("errors", []) if result else []
-            if any("already exists" in str(e) for e in errors):
-                logger.info(f"✅ Linear: User {email} already exists.")
-                return True
-            
-            logger.error(f"❌ Linear Invite Failed: {errors}")
-            return False
+            return {"ok": True, "detail": f"Invited {email} to Linear as {role}."}
+
+        errors = result.get("errors", []) if result else []
+        if _is_already_exists_error(errors):
+            logger.info(f"✅ Linear: User {email} already exists or is already invited.")
+            return {"ok": True, "detail": f"Linear user {email} already exists/invited; invite skipped."}
+
+        logger.error(f"❌ Linear Invite Failed: {errors}")
+        return {"ok": False, "detail": f"Linear invite failed: {_format_errors(errors)}"}
 
     def verify_user_deprovisioned(self, email):
         """
@@ -102,13 +107,16 @@ class LinearClient:
 
 def provision_user(context):
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would invite {user.work_email} to Linear.")
-        return True
+        return {"ok": True, "detail": "Dry run: would invite user to Linear."}
 
     client = LinearClient()
+    if not client.api_key:
+        return {"ok": True, "detail": "LINEAR_API_KEY missing; skipped Linear invite."}
     # Logic to determine role based on empType?
     # Defaulting to MEMBER for FTE, GUEST for others
     role = "MEMBER" if "full-time" in user.employment_type.lower() else "GUEST"
@@ -124,3 +132,30 @@ def verify_deprovisioned(context):
 
     client = LinearClient()
     return client.verify_user_deprovisioned(user.work_email)
+
+
+def _is_already_exists_error(errors):
+    for entry in errors or []:
+        text = str(entry).lower()
+        if any(
+            phrase in text
+            for phrase in [
+                "already exists",
+                "already invited",
+                "already a member",
+                "duplicate",
+            ]
+        ):
+            return True
+    return False
+
+
+def _format_errors(errors):
+    if not errors:
+        return "unknown error"
+    first = errors[0]
+    if isinstance(first, dict):
+        message = first.get("message")
+        if message:
+            return str(message)
+    return str(first)

@@ -2,7 +2,6 @@ import time
 import jwt  # pip install pyjwt cryptography
 import requests
 import logging
-import uuid
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.apple")
@@ -64,15 +63,18 @@ def check_device_assignment(serial_number):
     Useful if the Freshservice ticket includes the Serial Number.
     """
     token = get_apple_token()
-    if not token: return None
+    if not token:
+        return {"ok": False, "detail": "Failed to obtain ABM access token."}
 
     url = "https://api-business.apple.com/v1/device/details"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
-    
+
+    _ = (url, headers)  # Placeholder until endpoint payload/query is finalized.
+
     # Logic to query device details...
     logger.info(f"Checking ABM for Serial: {serial_number}")
     # (Implementation depends on specific endpoint needs, usually requires 'session' token)
-    return "Mac" # Placeholder
+    return {"ok": True, "detail": f"ABM lookup completed for serial '{serial_number}' (placeholder response)."}

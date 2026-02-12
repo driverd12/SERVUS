@@ -33,11 +33,16 @@ def provision_access(context):
     This step only pushes the print job to the queue.
     """
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would queue badge print job for {user.work_email}")
-        return True
+        return {"ok": True, "detail": "Dry run: would queue badge print job."}
+
+    if not CONFIG.get("SQS_BADGE_QUEUE_URL"):
+        logger.warning("⚠️ Brivo badge queue URL missing. Skipping badge queue step.")
+        return {"ok": True, "detail": "SQS_BADGE_QUEUE_URL missing; skipped badge queue step."}
 
     logger.info("🖨️  Queueing Badge Print Job (Metadata Push)...")
     
@@ -51,9 +56,10 @@ def provision_access(context):
         "profile_picture_url": user.profile_picture_url
     }
     
-    badge_queue.send_print_job(user_data)
-            
-    return True
+    queued = badge_queue.send_print_job(user_data)
+    if queued:
+        return {"ok": True, "detail": "Queued badge print job to SQS successfully."}
+    return {"ok": False, "detail": "Failed to queue badge print job to SQS."}
 
 def suspend_user(context):
     """

@@ -274,6 +274,35 @@ class ManualOverrideQueueTests(unittest.TestCase):
             rows = list(csv.DictReader(handle))
             self.assertEqual(rows[0]["status"], READY_STATUS)
 
+    def test_allow_before_start_date_round_trip(self):
+        user = UserProfile(
+            first_name="Queue",
+            last_name="Urgent",
+            work_email="queue.urgent@boom.aero",
+            personal_email=None,
+            department="Engineering",
+            title="Engineer",
+            manager_email=None,
+            employment_type="Full-Time",
+            start_date="2026-02-16",
+            location="US",
+        )
+        request = ManualOverrideRequest(
+            request_id="REQ-QUEUE-URGENT",
+            user_profile=user,
+            confirmation_source_a="Rippling-1",
+            confirmation_source_b="Freshservice-1",
+            reason="Urgent onboarding",
+            allow_before_start_date=True,
+        )
+        action = enqueue_request(self.csv_path, request, status=READY_STATUS)
+        self.assertEqual(action, "inserted")
+
+        ready, invalid = load_ready_requests(self.csv_path)
+        self.assertEqual(len(invalid), 0)
+        self.assertEqual(len(ready), 1)
+        self.assertTrue(ready[0].allow_before_start_date)
+
     def test_enqueue_request_duplicate_requires_allow_update(self):
         user = UserProfile(
             first_name="Queue",

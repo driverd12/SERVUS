@@ -101,3 +101,27 @@
 - **CONSEQUENCES:** Manual queue ingress now supports concise commands from email + two IDs; Freshservice ticket shorthand (`INC-140`) and ticket URLs normalize to canonical `freshservice:ticket_id:<id>`.
 - **ROLLBACK:** Revert `scripts/live_onboard_test.py`, remove `tests_python/test_live_onboard_cli_shortcuts.py`, and revert related examples in `docs/Onboarding.md`.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_live_onboard_cli_shortcuts.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md
+
+- **DECISION:** Make `scripts/scheduler.py` self-bootstrap repo imports by adding repo root to `sys.path` at runtime.
+- **CONTEXT:** Invoking scheduler by absolute path raised `ModuleNotFoundError: No module named 'servus'` when parent repo was not on `PYTHONPATH`.
+- **CONSEQUENCES:** Scheduler can now be launched reliably from any working directory using absolute or relative script paths.
+- **ROLLBACK:** Remove the `sys.path` bootstrap block from `scripts/scheduler.py` and run scheduler only from a correctly configured Python path/environment.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/scheduler.py, /Users/dan.driver/Cursor_projects/python/SERVUS/rolling_notes_for_servus.md
+
+- **DECISION:** Extend Slack notifier usage to include per-step start/result events and run summaries with trigger/request context.
+- **CONTEXT:** Operator visibility was too coarse (start/success/failure only), making live issue triage harder during unattended onboarding runs.
+- **CONSEQUENCES:** Slack now receives step-by-step progress plus completion metrics (`steps_total`, `steps_succeeded`, `steps_failed`) and includes `trigger_source`/`request_id` when available.
+- **ROLLBACK:** Revert `servus/notifier.py`, `servus/orchestrator.py`, `scripts/scheduler.py`, remove `tests_python/test_orchestrator_slack_notifications.py`, and remove related inspection checklist text.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/notifier.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/orchestrator.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/scheduler.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_orchestrator_slack_notifications.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md
+
+- **DECISION:** Add scheduler startup hardening with preflight action-registry validation across workflow YAMLs and strict manual override start-date gating with urgent overrides.
+- **CONTEXT:** Live onboarding exposed runtime failures from missing workflow action mappings and premature execution of future-dated manual override requests.
+- **CONSEQUENCES:** Scheduler now surfaces blocking startup issues before execution and defers `READY` rows until `start_date <= today` unless explicitly overridden (`allow_before_start_date` or global early-execution config).
+- **ROLLBACK:** Revert `scripts/scheduler.py`, `servus/core/manual_override_queue.py`, `scripts/live_onboard_test.py`, and related docs/tests; restart scheduler.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/scheduler.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_queue.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_scheduler_hardening.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md
+
+- **DECISION:** Normalize onboarding integration outcomes to structured idempotent results so pre-created users and optional-tool gaps emit explicit skip reasons instead of ambiguous failures.
+- **CONTEXT:** Onboarding runs needed to continue predictably when accounts were already present or when optional integrations were intentionally unavailable.
+- **CONSEQUENCES:** Slack/Zoom/Linear/Ramp/Brivo/Okta/Google steps now return richer `ok/detail` outcomes used by per-step notifications (for example, "already exists", "SCIM lag skip", or "config missing skip").
+- **ROLLBACK:** Revert integration updates and registry/tests, then restart scheduler to restore legacy bool-only behavior.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/slack.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/zoom.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/linear.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/ramp.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/brivo.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/google_gam.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/okta.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_google_gam_group_semantics.py

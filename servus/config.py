@@ -10,6 +10,14 @@ load_dotenv()
 
 logger = logging.getLogger("servus.config")
 
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
 def fetch_aws_secrets():
     """
     Fetches secrets from AWS Secrets Manager.
@@ -145,6 +153,18 @@ CONFIG = {
     ),
     "SCHEDULER_STATE_FILE": env_config.get(
         "SERVUS_SCHEDULER_STATE_FILE", "servus_state/scheduler_state.json"
+    ),
+    "MANUAL_OVERRIDE_ENFORCE_START_DATE": _as_bool(
+        env_config.get("SERVUS_MANUAL_OVERRIDE_ENFORCE_START_DATE"),
+        default=True,
+    ),
+    "MANUAL_OVERRIDE_ALLOW_EARLY_GLOBAL": _as_bool(
+        env_config.get("SERVUS_MANUAL_OVERRIDE_ALLOW_EARLY_GLOBAL"),
+        default=False,
+    ),
+    "PREFLIGHT_STRICT": _as_bool(
+        env_config.get("SERVUS_PREFLIGHT_STRICT"),
+        default=False,
     ),
 }
 

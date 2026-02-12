@@ -13,7 +13,11 @@ class ZoomClient:
         self._token = None
 
     def _get_token(self):
-        if self._token: return self._token
+        if self._token:
+            return self._token
+        if not self.account_id or not self.client_id or not self.client_secret:
+            logger.warning("⚠️ Zoom credentials missing. Skipping Zoom configuration.")
+            return None
         
         url = f"https://zoom.us/oauth/token?grant_type=account_credentials&account_id={self.account_id}"
         try:
@@ -46,28 +50,45 @@ class ZoomClient:
         """
         Assigns Basic (1) or Licensed (2) based on empType.
         """
+        if not self.account_id or not self.client_id or not self.client_secret:
+            return {"ok": True, "detail": "Zoom credentials missing; skipped Zoom license assignment."}
+
         # 1 = Basic, 2 = Licensed
         license_type = 2 if "full-time" in emp_type.lower() else 1
         
         # First, find the user ID
         resp = self._request("GET", f"/users/{email}")
-        if not resp or resp.status_code != 200:
+        if not resp:
+            return {"ok": False, "detail": "Zoom API request failed while looking up user."}
+        if resp.status_code == 404:
             logger.warning(f"⚠️ Zoom: User {email} not found. (SCIM lag?)")
-            return False
+            return {"ok": True, "detail": "Zoom user not found yet; skipped license assignment (SCIM lag)."}
+        if resp.status_code != 200:
+            return {
+                "ok": False,
+                "detail": f"Zoom user lookup failed ({resp.status_code}): {_response_detail(resp)}",
+            }
             
         user_id = resp.json().get("id")
+        if not user_id:
+            return {"ok": False, "detail": f"Zoom user lookup returned no id for {email}."}
         
         # Update settings
         payload = {"type": license_type}
         logger.info(f"🎥 Zoom: Setting license type {license_type} for {email}...")
         
         update_resp = self._request("PATCH", f"/users/{user_id}", data=payload)
-        if update_resp and update_resp.status_code == 204:
+        if update_resp and update_resp.status_code in {200, 204}:
             logger.info("✅ Zoom: License updated.")
-            return True
-        else:
-            logger.error(f"❌ Zoom Update Failed: {update_resp.text if update_resp else 'No Resp'}")
-            return False
+            return {"ok": True, "detail": f"Zoom license set to type {license_type}."}
+        if not update_resp:
+            return {"ok": False, "detail": "Zoom API request failed during license update."}
+
+        logger.error(f"❌ Zoom Update Failed: {update_resp.text}")
+        return {
+            "ok": False,
+            "detail": f"Zoom license update failed ({update_resp.status_code}): {_response_detail(update_resp)}",
+        }
 
     def add_to_group(self, email, group_name):
         # Implementation would require listing groups to find ID, then adding member
@@ -78,11 +99,25 @@ class ZoomClient:
 
 def configure_user(context):
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would configure Zoom license for {user.work_email}")
-        return True
+        return {"ok": True, "detail": "Dry run: would configure Zoom license."}
 
     client = ZoomClient()
     return client.assign_license(user.work_email, user.employment_type)
+
+
+def _response_detail(response):
+    try:
+        payload = response.json()
+        if isinstance(payload, dict):
+            message = payload.get("message") or payload.get("error")
+            if message:
+                return str(message)
+            return str(payload)
+        return str(payload)
+    except Exception:
+        return (response.text or "").strip()[:300]

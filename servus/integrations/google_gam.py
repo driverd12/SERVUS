@@ -23,7 +23,8 @@ def wait_for_user_scim(context):
     Polls Google (via GAM) to wait for the user to be created by Okta SCIM.
     """
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     email = user.work_email
     
     logger.info(f"⏳ Google: Waiting for SCIM to create {email}...")
@@ -36,16 +37,16 @@ def wait_for_user_scim(context):
         success, stdout, _ = run_gam(["info", "user", email])
         if success:
             logger.info(f"✅ Google: User {email} found!")
-            return True
+            return {"ok": True, "detail": "User already exists in Google (SCIM sync complete)."}
         
         if context.get("dry_run"):
              logger.info(f"[DRY-RUN] Would wait for {email} (Simulating success)")
-             return True
+             return {"ok": True, "detail": "Dry run simulated SCIM wait success."}
 
         time.sleep(30)
         
     logger.error(f"❌ Google: Timed out waiting for {email} after {timeout}s")
-    return False
+    return {"ok": False, "detail": f"Timed out waiting for SCIM user creation after {timeout}s."}
 
 def move_user_ou(context):
     """
@@ -53,7 +54,8 @@ def move_user_ou(context):
     Respects protected OUs.
     """
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     email = user.work_email
     
     # 1. Get Current OU
@@ -64,7 +66,7 @@ def move_user_ou(context):
             current_ou = "/Unknown" # Fake for dry run
         else:
             logger.error(f"❌ Google: Could not find user {email} to move.")
-            return False
+            return {"ok": False, "detail": f"Could not find Google user {email} for OU move."}
     else:
         # Parse OU from stdout (GAM output format varies, usually "Org Unit Path: /Foo")
         current_ou = ""
@@ -77,7 +79,7 @@ def move_user_ou(context):
     protected_ous = ["/SuperAdmins", "/Service Accounts", "/Deprovisioning", "/Retention - e-mail"]
     if current_ou in protected_ous:
         logger.warning(f"⚠️ Google: User {email} is in protected OU '{current_ou}'. Skipping move.")
-        return True # Treat as success to not break workflow
+        return {"ok": True, "detail": f"User in protected OU '{current_ou}', move skipped."}
         
     # 3. Determine Target OU
     emp_type = user.employment_type.lower()
@@ -94,28 +96,29 @@ def move_user_ou(context):
         
     if current_ou == target_ou:
         logger.info(f"✅ Google: User {email} already in {target_ou}")
-        return True
+        return {"ok": True, "detail": f"User already in target OU '{target_ou}'."}
         
     # 4. Move
     logger.info(f"🚚 Google: Moving {email} from '{current_ou}' to '{target_ou}'")
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would move {email} to {target_ou}")
-        return True
+        return {"ok": True, "detail": f"Dry run: would move user to '{target_ou}'."}
         
     success, _, stderr = run_gam(["update", "user", email, "org", target_ou])
     if success:
         logger.info(f"✅ Google: Moved {email} to {target_ou}")
-        return True
+        return {"ok": True, "detail": f"Moved user to OU '{target_ou}'."}
     else:
         logger.error(f"❌ Google: Failed to move {email}: {stderr}")
-        return False
+        return {"ok": False, "detail": f"Failed to move user to OU '{target_ou}': {stderr}"}
 
 def add_groups(context):
     """
     Adds user to default groups based on department/role.
     """
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     email = user.work_email
     
     logger.info(f"👥 Google: Adding groups for {email}...")
@@ -136,13 +139,15 @@ def add_groups(context):
     
     if not groups_to_add:
         logger.info("   No groups matched criteria.")
-        return True
+        return {"ok": True, "detail": "No Google groups matched policy; skipped."}
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would add {email} to groups: {groups_to_add}")
-        return True
+        return {"ok": True, "detail": f"Dry run: would add user to groups {sorted(groups_to_add)}."}
 
     success_count = 0
+    already_member_count = 0
+    failed_groups = []
     for group_email in groups_to_add:
         # gam update group <group> add member <user>
         logger.info(f"   Adding to {group_email}...")
@@ -158,12 +163,22 @@ def add_groups(context):
             if "Member already exists" in stdout or "Member already exists" in stderr:
                  logger.info(f"   ℹ️ Already a member of {group_email}")
                  success_count += 1
+                 already_member_count += 1
             elif "Group not found" in stdout or "Group not found" in stderr:
                  logger.error(f"   ❌ Group {group_email} not found!")
+                 failed_groups.append(f"{group_email}:group-not-found")
             else:
                  logger.error(f"   ❌ Failed to add to {group_email}: {stderr}")
-             
-    return True
+                 failed_groups.append(f"{group_email}:add-failed")
+
+    ok = len(failed_groups) == 0 and success_count == len(groups_to_add)
+    detail = (
+        f"group_targets={len(groups_to_add)}, added_or_present={success_count}, "
+        f"already_member={already_member_count}, failed={len(failed_groups)}"
+    )
+    if failed_groups:
+        detail += f", failed_groups={failed_groups}"
+    return {"ok": ok, "detail": detail}
 
 def deprovision_user(context):
     """

@@ -35,7 +35,11 @@ def add_to_channels(context):
     Waits for user to exist (SCIM sync).
     """
     user = context.get("user_profile")
-    if not user: return False
+    if not user:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
+    if not CONFIG.get("SLACK_TOKEN"):
+        logger.warning("⚠️ Slack token missing. Skipping Slack channel assignment.")
+        return {"ok": True, "detail": "SLACK_TOKEN missing; skipped Slack channel assignment."}
 
     # 1. Get Slack User ID with Wait Loop
     user_id = None
@@ -60,14 +64,19 @@ def add_to_channels(context):
         time.sleep(30)
         
     if not user_id:
-        logger.warning(f"Skipping channel add: Could not find Slack user for {email} after {timeout}s. (SCIM sync delay?)")
-        return False
+        logger.warning(
+            f"Skipping channel add: Could not find Slack user for {email} after {timeout}s. (SCIM sync delay?)"
+        )
+        return {
+            "ok": True,
+            "detail": f"Slack user not found after {timeout}s; channel assignment skipped (SCIM lag).",
+        }
 
     # 2. Load Channel Rules
     channels_file = os.path.join("servus", "data", "slack_channels.yaml")
     if not os.path.exists(channels_file):
         logger.error(f"Missing data file: {channels_file}")
-        return False
+        return {"ok": False, "detail": f"Missing Slack channel map: {channels_file}"}
 
     with open(channels_file, 'r') as f:
         config = yaml.safe_load(f)
@@ -104,14 +113,18 @@ def add_to_channels(context):
         target_channels.update(config["departments"][dept_key])
     
     logger.info(f"Adding {user.email} to {len(target_channels)} Slack channels...")
+    if not target_channels:
+        return {"ok": True, "detail": "No Slack channels matched policy; skipped."}
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would add to: {target_channels}")
-        return True
+        return {"ok": True, "detail": f"Dry run: would add to channels {sorted(target_channels)}."}
 
     # 4. Invite User
     url = "https://slack.com/api/conversations.invite"
-    success_count = 0
+    added_count = 0
+    already_in_channel_count = 0
+    failed_channels = []
     
     for channel_id in target_channels:
         if not channel_id: continue # Skip empty
@@ -122,14 +135,24 @@ def add_to_channels(context):
         
         if resp.get("ok"):
             logger.info(f" - Added to {channel_id}")
-            success_count += 1
+            added_count += 1
         elif resp.get("error") == "already_in_channel":
             # This is fine, just means they are already there
-            success_count += 1
+            logger.info(f" - Already in {channel_id}")
+            already_in_channel_count += 1
         else:
-            logger.error(f" - Failed to add to {channel_id}: {resp.get('error')}")
+            error_code = resp.get("error") or "unknown_error"
+            logger.error(f" - Failed to add to {channel_id}: {error_code}")
+            failed_channels.append(f"{channel_id}:{error_code}")
 
-    return success_count > 0
+    ok = len(failed_channels) == 0
+    detail = (
+        f"target_channels={len(target_channels)}, added={added_count}, "
+        f"already_in_channel={already_in_channel_count}, failed={len(failed_channels)}"
+    )
+    if failed_channels:
+        detail += f", failed_channels={failed_channels}"
+    return {"ok": ok, "detail": detail}
 
 def deactivate_user(context):
     """

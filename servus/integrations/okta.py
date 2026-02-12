@@ -64,7 +64,8 @@ def wait_for_user(context):
     Retries every 30 seconds for up to 10 minutes.
     """
     user_profile = context.get("user_profile")
-    if not user_profile: return False
+    if not user_profile:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     target_email = user_profile.work_email
     client = OktaClient()
@@ -76,7 +77,7 @@ def wait_for_user(context):
     
     if context.get("dry_run"):
         logger.info("[DRY-RUN] Would poll Okta API until user is found.")
-        return True
+        return {"ok": True, "detail": "Dry run: would poll Okta until user appears."}
 
     for attempt in range(1, max_retries + 1):
         okta_user = client.get_user(target_email)
@@ -88,13 +89,16 @@ def wait_for_user(context):
             
             # Store Okta ID in context for later steps if needed
             context["okta_user_id"] = user_id
-            return True
+            return {
+                "ok": True,
+                "detail": f"Okta user found (id={user_id}, status={status}).",
+            }
         
         logger.info(f"   ... Attempt {attempt}/{max_retries}: User not found yet. Waiting {interval}s.")
         time.sleep(interval)
 
     logger.error(f"❌ TIMEOUT: User {target_email} never appeared in Okta after 10 minutes.")
-    return False
+    return {"ok": False, "detail": "Timed out waiting for Okta user sync."}
 
 def assign_custom_groups(context):
     """
@@ -102,7 +106,8 @@ def assign_custom_groups(context):
     Useful for things SCIM rules might miss or for 'Day 1' logic.
     """
     user_profile = context.get("user_profile")
-    if not user_profile: return False
+    if not user_profile:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     # We need the Okta User ID (should be in context from the 'wait' step)
     # If not, we fetch it quickly.
@@ -115,7 +120,7 @@ def assign_custom_groups(context):
             user_id = okta_user.get("id")
         else:
             logger.error("❌ Cannot assign groups: User not found in Okta.")
-            return False
+            return {"ok": False, "detail": "Cannot assign Okta groups because user was not found."}
 
     # Example Logic: Assign "Contractors" group if type matches
     # You would put your REAL Group IDs in your .env or config
@@ -125,10 +130,13 @@ def assign_custom_groups(context):
         logger.info("Detected Contractor: Assigning to Okta Contractor Group...")
         if context.get("dry_run"):
             logger.info(f"[DRY-RUN] Would add user {user_id} to group {contractor_group_id}")
+            return {"ok": True, "detail": "Dry run: would assign contractor Okta group."}
         else:
-            client.add_user_to_group(user_id, contractor_group_id)
+            if client.add_user_to_group(user_id, contractor_group_id):
+                return {"ok": True, "detail": "Assigned contractor-specific Okta group."}
+            return {"ok": False, "detail": "Failed assigning contractor-specific Okta group."}
 
-    return True
+    return {"ok": True, "detail": "No additional Okta group assignments matched policy."}
 
 def verify_manager_resolved(context):
     """
@@ -136,7 +144,8 @@ def verify_manager_resolved(context):
     This is critical for AD sync to succeed.
     """
     user_profile = context.get("user_profile")
-    if not user_profile: return False
+    if not user_profile:
+        return {"ok": False, "detail": "Missing user_profile in action context."}
     
     client = OktaClient()
     email = user_profile.work_email
@@ -145,7 +154,7 @@ def verify_manager_resolved(context):
     
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would check if manager is assigned in Okta.")
-        return True
+        return {"ok": True, "detail": "Dry run: would verify Okta manager mapping."}
 
     # Poll for manager attribute
     max_retries = 10
@@ -159,13 +168,13 @@ def verify_manager_resolved(context):
             
             if manager:
                 logger.info(f"✅ Okta: Manager resolved: {manager}")
-                return True
+                return {"ok": True, "detail": f"Okta manager resolved: {manager}"}
         
         logger.info(f"   ... Waiting for manager assignment ({i+1}/{max_retries})...")
         time.sleep(10)
         
     logger.warning("⚠️ Okta: Manager not resolved after timeout. AD sync might fail.")
-    return False # Or True if we want to be non-blocking
+    return {"ok": False, "detail": "Manager attribute not resolved in Okta before timeout."}
 
 def deactivate_user(context):
     """

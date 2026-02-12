@@ -31,6 +31,8 @@ The opposite of [[Offboarding]]!
 
 - Scheduler scans manual overrides every scheduler cycle.
 - Only rows with `status=READY` are processed. `HOLD`/`ERROR` rows are ignored.
+- `READY` rows are gated by `start_date` by default. If `start_date` is in the future, SERVUS defers execution.
+- For urgent off-cycle requests, set row `allow_before_start_date=true` (or use CLI `--urgent`) to allow immediate execution.
 - On successful onboarding, the row is removed from the CSV.
 - If onboarding fails, the row is marked `ERROR` with `last_error` to prevent retry loops.
 - If the user/start-date combination was already successfully onboarded, the row is automatically removed as already satisfied.
@@ -72,14 +74,28 @@ python3 scripts/live_onboard_test.py \
   --reason "Urgent onboarding" \
   --allow-update \
   --ready
+
+# 3) Urgent mode (execute before start_date)
+python3 scripts/live_onboard_test.py \
+  --request-id REQ-20260212-kayla-001 \
+  --work-email kayla.durgee@boom.aero \
+  --rippling-worker-id 697924b36aa907afbec5b964 \
+  --freshservice-ticket-id 140 \
+  --reason "Urgent onboarding" \
+  --allow-update \
+  --ready \
+  --urgent
 ```
 
 Important:
 - `HOLD` rows are not processed.
 - `READY` rows are processed on the next scheduler cycle.
+- Default poll cadence is every 5 minutes.
 - `request_id` is optional on insert and auto-generated if omitted.
 - You can also approve by editing the CSV row status to `READY`.
+- If `start_date` is in the future and urgent mode is not enabled, the row remains `READY` and is retried each cycle until eligible.
 - If Rippling lookup cannot supply `start_date`, pass `--start-date` explicitly (kept required for dedupe safety).
+- Start unattended scheduler with `python3 scripts/scheduler.py`.
 ## Manual Onboarding Best Practices
 - Always copy-and-paste usernames and names.  If you type usernames or names anywhere, you will eventually make a typo.  Typos in usernames are time consuming to correct.  If there is a Typo in a name, best that it comes from upstream-- not from you.
 ## Create a checklist document

@@ -11,3 +11,5 @@ servus_state/
 dist/
 data/
 docs/supplier_offboardings_SERVUS.csv
+servus_scheduler.log
+servus_scheduler.log.*

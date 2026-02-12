@@ -70,6 +70,16 @@ def parse_args() -> argparse.Namespace:
         "--freshservice-ticket-id",
         help="Shortcut for confirmation source B. Expands to freshservice:ticket_id:<id>. Accepts 140, INC-140, or ticket URL.",
     )
+    parser.add_argument(
+        "--allow-before-start-date",
+        action="store_true",
+        help="Allow scheduler to execute this request before start_date (urgent override).",
+    )
+    parser.add_argument(
+        "--urgent",
+        action="store_true",
+        help="Alias for --allow-before-start-date.",
+    )
     parser.add_argument("--reason", default="")
     parser.add_argument(
         "--skip-integration-lookup",
@@ -186,16 +196,18 @@ def main() -> int:
             confirmation_source_a=confirmation_sources[0],
             confirmation_source_b=confirmation_sources[1],
             reason=args.reason.strip() or None,
+            allow_before_start_date=bool(args.allow_before_start_date or args.urgent),
         )
 
         if args.dry_run:
             logger.info("Dry-run validation passed.")
             enqueue_status = READY_STATUS if args.ready else HOLD_STATUS
             logger.info(
-                "Would enqueue request_id=%s email=%s status=%s csv=%s",
+                "Would enqueue request_id=%s email=%s status=%s allow_before_start_date=%s csv=%s",
                 request_id,
                 user.work_email,
                 enqueue_status,
+                "true" if request.allow_before_start_date else "false",
                 args.csv_path,
             )
             return 0
@@ -209,11 +221,12 @@ def main() -> int:
             status=enqueue_status,
         )
         logger.info(
-            "Queued manual onboarding request (%s): request_id=%s email=%s status=%s csv=%s",
+            "Queued manual onboarding request (%s): request_id=%s email=%s status=%s allow_before_start_date=%s csv=%s",
             action,
             request_id,
             user.work_email,
             enqueue_status,
+            "true" if request.allow_before_start_date else "false",
             args.csv_path,
         )
         if enqueue_status == READY_STATUS:

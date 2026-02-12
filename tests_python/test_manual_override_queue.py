@@ -5,6 +5,7 @@ import unittest
 
 from servus.core.manual_override_queue import (
     ERROR_STATUS,
+    HOLD_STATUS,
     READY_STATUS,
     ManualOverrideRequest,
     build_onboarding_dedupe_key,
@@ -244,6 +245,33 @@ class ManualOverrideQueueTests(unittest.TestCase):
             rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["request_id"], "REQ-QUEUE-1")
+            self.assertEqual(rows[0]["status"], HOLD_STATUS)
+
+    def test_enqueue_request_can_insert_ready_status(self):
+        user = UserProfile(
+            first_name="Queue",
+            last_name="User",
+            work_email="queue.ready@boom.aero",
+            personal_email=None,
+            department="Engineering",
+            title="Engineer",
+            manager_email=None,
+            employment_type="Full-Time",
+            start_date="2026-02-16",
+            location="US",
+        )
+        request = ManualOverrideRequest(
+            request_id="REQ-QUEUE-READY",
+            user_profile=user,
+            confirmation_source_a="Rippling-1",
+            confirmation_source_b="Freshservice-1",
+            reason="Urgent onboarding",
+        )
+        action = enqueue_request(self.csv_path, request, status=READY_STATUS)
+        self.assertEqual(action, "inserted")
+
+        with open(self.csv_path, "r", newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
             self.assertEqual(rows[0]["status"], READY_STATUS)
 
     def test_enqueue_request_duplicate_requires_allow_update(self):

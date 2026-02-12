@@ -38,18 +38,15 @@ The opposite of [[Offboarding]]!
 ### Queue submission helper (headless-safe)
 
 Use `scripts/live_onboard_test.py` to enqueue a request instead of executing onboarding directly.
+The helper defaults to `HOLD` for safety.
 
 Dry-run validation:
 
 ```bash
+# Minimal: provide email + start date, let Rippling/Okta fill the rest.
 python3 scripts/live_onboard_test.py \
-  --first-name Kayla \
-  --last-name Durgee \
   --work-email kayla.durgee@boom.aero \
-  --department IT \
-  --employment-type "Salaried, full-time" \
   --start-date 2026-02-17 \
-  --manager-email alex.mccoy@boom.aero \
   --confirmation-source-a Rippling-Manual-Approval-123 \
   --confirmation-source-b Freshservice-Ticket-456 \
   --reason "Urgent onboarding" \
@@ -59,21 +56,32 @@ python3 scripts/live_onboard_test.py \
 Queue for scheduler pickup:
 
 ```bash
+# 1) Stage request as HOLD (safe default)
 python3 scripts/live_onboard_test.py \
-  --first-name Kayla \
-  --last-name Durgee \
+  --request-id REQ-20260212-kayla-001 \
   --work-email kayla.durgee@boom.aero \
-  --department IT \
-  --employment-type "Salaried, full-time" \
   --start-date 2026-02-17 \
-  --manager-email alex.mccoy@boom.aero \
   --confirmation-source-a Rippling-Manual-Approval-123 \
   --confirmation-source-b Freshservice-Ticket-456 \
   --reason "Urgent onboarding"
+
+# 2) Approve for execution (switch to READY)
+python3 scripts/live_onboard_test.py \
+  --request-id REQ-20260212-kayla-001 \
+  --work-email kayla.durgee@boom.aero \
+  --start-date 2026-02-17 \
+  --confirmation-source-a Rippling-Manual-Approval-123 \
+  --confirmation-source-b Freshservice-Ticket-456 \
+  --reason "Urgent onboarding" \
+  --allow-update \
+  --ready
 ```
 
 Important:
-- Do not queue `READY` rows until you are ready for unattended execution on the next scheduler cycle.
+- `HOLD` rows are not processed.
+- `READY` rows are processed on the next scheduler cycle.
+- You can also approve by editing the CSV row status to `READY`.
+- If Rippling lookup cannot supply `start_date`, pass `--start-date` explicitly (kept required for dedupe safety).
 ## Manual Onboarding Best Practices
 - Always copy-and-paste usernames and names.  If you type usernames or names anywhere, you will eventually make a typo.  Typos in usernames are time consuming to correct.  If there is a Typo in a name, best that it comes from upstream-- not from you.
 ## Create a checklist document

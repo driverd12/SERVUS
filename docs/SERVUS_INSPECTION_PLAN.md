@@ -26,6 +26,8 @@ Run these checks when validating local IDE continuity infrastructure:
 Run these checks when validating urgent/manual onboarding support:
 
 - Validate queue submission helper with `python3 scripts/live_onboard_test.py --dry-run ...`.
+- Confirm helper writes `HOLD` by default and only executes after explicit `READY` approval.
+- Validate minimal enqueue path (`--work-email` + `--start-date`) and verify Rippling/Okta enrichment fills remaining profile fields.
 - Confirm scheduler logs the configured manual override CSV path at startup.
 - Confirm `HOLD` rows are ignored and only `READY` rows are processed.
 - Add a valid `READY` row to the override CSV and verify one onboarding run occurs.

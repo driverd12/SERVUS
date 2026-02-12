@@ -3,8 +3,8 @@
 Queue a manual onboarding request for headless scheduler processing.
 
 This script replaces direct one-off onboarding execution. It writes a validated
-`READY` row into the manual override CSV queue so unattended SERVUS can process
-it in the normal scheduler loop.
+manual override row into the scheduler queue (default `HOLD`, optional `READY`)
+so unattended SERVUS can process it in the normal polling loop.
 """
 
 import argparse
@@ -14,7 +14,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 # Allow running as `python3 scripts/live_onboard_test.py` from repo root.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -22,8 +22,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from servus.config import CONFIG
+from servus.core.manual_override_enrichment import enrich_from_integrations
 from servus.core.manual_override_queue import (
+    HOLD_STATUS,
     ManualOverrideRequest,
+    READY_STATUS,
     enqueue_request,
     ensure_override_csv,
 )
@@ -57,9 +60,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--title")
     parser.add_argument("--manager-email")
     parser.add_argument("--location", default="US")
-    parser.add_argument("--confirmation-source-a", required=True)
-    parser.add_argument("--confirmation-source-b", required=True)
+    parser.add_argument("--confirmation-source-a")
+    parser.add_argument("--confirmation-source-b")
     parser.add_argument("--reason", default="")
+    parser.add_argument(
+        "--skip-integration-lookup",
+        action="store_true",
+        help="Disable Rippling/Okta auto-enrichment from work email.",
+    )
     parser.add_argument(
         "--allow-update",
         action="store_true",
@@ -71,6 +79,11 @@ def parse_args() -> argparse.Namespace:
         help="Validate and print request without writing CSV",
     )
     parser.add_argument(
+        "--ready",
+        action="store_true",
+        help="Queue request as READY (default queue status is HOLD).",
+    )
+    parser.add_argument(
         "--live",
         action="store_true",
         help="Deprecated. Direct live execution is no longer supported by this script.",
@@ -78,7 +91,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_user_profile(args: argparse.Namespace) -> UserProfile:
+def build_user_profile(args: argparse.Namespace) -> Tuple[UserProfile, List[str]]:
     profile_data: Dict[str, Any] = {}
     if args.profile_json:
         profile_data = load_profile_json(args.profile_json)
@@ -96,11 +109,29 @@ def build_user_profile(args: argparse.Namespace) -> UserProfile:
         "location": args.location or profile_data.get("location") or "US",
     }
 
+    enrichment_sources = []
+    if kwargs.get("work_email") and not args.skip_integration_lookup:
+        enrichment = enrich_from_integrations(str(kwargs["work_email"]))
+        for key, value in enrichment.profile_defaults.items():
+            if not kwargs.get(key):
+                kwargs[key] = value
+        enrichment_sources = enrichment.confirmation_sources
+        if enrichment.evidence:
+            logger.info(
+                "Integration enrichment for %s: %s",
+                kwargs["work_email"],
+                ", ".join(enrichment.evidence),
+            )
+
     missing = [key for key in ["first_name", "last_name", "work_email", "department", "employment_type", "start_date"] if not kwargs.get(key)]
     if missing:
-        raise ValueError(f"Missing required profile fields: {', '.join(missing)}")
+        raise ValueError(
+            "Missing required profile fields after integration lookup: "
+            f"{', '.join(missing)}. "
+            "Provide values explicitly or verify Rippling/Okta connectivity."
+        )
 
-    return UserProfile(**kwargs)
+    return UserProfile(**kwargs), enrichment_sources
 
 
 def load_profile_json(path: str) -> Dict[str, Any]:
@@ -138,35 +169,88 @@ def main() -> int:
         return 2
 
     try:
-        user = build_user_profile(args)
+        user, auto_confirmation_sources = build_user_profile(args)
         request_id = args.request_id or generate_request_id(str(user.work_email))
+        confirmation_sources = _resolve_confirmation_sources(args, auto_confirmation_sources)
         request = ManualOverrideRequest(
             request_id=request_id,
             user_profile=user,
-            confirmation_source_a=args.confirmation_source_a.strip(),
-            confirmation_source_b=args.confirmation_source_b.strip(),
+            confirmation_source_a=confirmation_sources[0],
+            confirmation_source_b=confirmation_sources[1],
             reason=args.reason.strip() or None,
         )
 
         if args.dry_run:
             logger.info("Dry-run validation passed.")
-            logger.info("Would enqueue request_id=%s email=%s csv=%s", request_id, user.work_email, args.csv_path)
+            enqueue_status = READY_STATUS if args.ready else HOLD_STATUS
+            logger.info(
+                "Would enqueue request_id=%s email=%s status=%s csv=%s",
+                request_id,
+                user.work_email,
+                enqueue_status,
+                args.csv_path,
+            )
             return 0
 
         ensure_override_csv(args.csv_path)
-        action = enqueue_request(args.csv_path, request, allow_update=args.allow_update)
+        enqueue_status = READY_STATUS if args.ready else HOLD_STATUS
+        action = enqueue_request(
+            args.csv_path,
+            request,
+            allow_update=args.allow_update,
+            status=enqueue_status,
+        )
         logger.info(
-            "Queued manual onboarding request (%s): request_id=%s email=%s csv=%s",
+            "Queued manual onboarding request (%s): request_id=%s email=%s status=%s csv=%s",
             action,
             request_id,
             user.work_email,
+            enqueue_status,
             args.csv_path,
         )
-        logger.info("Scheduler will pick this up on the next polling cycle.")
+        if enqueue_status == READY_STATUS:
+            logger.info("Scheduler will pick this up on the next polling cycle.")
+        else:
+            logger.info("Request is HOLD. Set status=READY (or re-run with --ready --allow-update) when approved.")
         return 0
     except Exception as exc:
         logger.error("Failed to queue manual onboarding request: %s", exc)
         return 1
+
+
+def _resolve_confirmation_sources(
+    args: argparse.Namespace,
+    auto_sources: List[str],
+) -> List[str]:
+    requested = []
+    if args.confirmation_source_a:
+        requested.append(args.confirmation_source_a.strip())
+    if args.confirmation_source_b:
+        requested.append(args.confirmation_source_b.strip())
+
+    for source in auto_sources:
+        if source:
+            requested.append(source)
+
+    deduped = []
+    seen = set()
+    for source in requested:
+        normalized = source.strip()
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+
+    if len(deduped) < 2:
+        raise ValueError(
+            "Two confirmation sources are required. "
+            "Provide --confirmation-source-a/--confirmation-source-b or ensure Rippling+Okta lookup succeeds."
+        )
+
+    return deduped[:2]
 
 
 if __name__ == "__main__":

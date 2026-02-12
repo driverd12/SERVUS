@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 from servus.models import UserProfile
 
 READY_STATUS = "READY"
+HOLD_STATUS = "HOLD"
 ERROR_STATUS = "ERROR"
 
 REQUIRED_COLUMNS = [
@@ -56,7 +57,7 @@ class ManualOverrideRequest:
     def dedupe_key(self) -> str:
         return build_onboarding_dedupe_key(self.user_profile)
 
-    def to_row(self, status: str = READY_STATUS) -> Dict[str, str]:
+    def to_row(self, status: str = HOLD_STATUS) -> Dict[str, str]:
         now = _now_iso()
         return {
             "request_id": self.request_id,
@@ -123,18 +124,23 @@ def enqueue_request(
     request: ManualOverrideRequest,
     *,
     allow_update: bool = False,
+    status: str = HOLD_STATUS,
 ) -> str:
     """
     Insert a READY request row into the override queue.
     Returns "inserted" or "updated".
     """
+    normalized_status = (status or HOLD_STATUS).strip().upper()
+    if normalized_status not in {HOLD_STATUS, READY_STATUS}:
+        raise ValueError(f"Unsupported enqueue status: {status}")
+
     # Validate before writing.
-    _parse_request(request.to_row(status=READY_STATUS))
+    _parse_request(request.to_row(status=normalized_status))
 
     rows, headers = _read_rows(csv_path)
     now = _now_iso()
     request_id = request.request_id
-    incoming_row = request.to_row(status=READY_STATUS)
+    incoming_row = request.to_row(status=normalized_status)
 
     for index, row in enumerate(rows):
         if _row_request_id(row) != request_id:

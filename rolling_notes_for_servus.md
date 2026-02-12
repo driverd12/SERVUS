@@ -80,6 +80,12 @@
 
 - **DECISION:** Repurpose `scripts/live_onboard_test.py` from direct execution into a headless-safe queue submission helper for the manual override CSV.
 - **CONTEXT:** One-off hardcoded live scripts create operational drift and bypass scheduler controls; manual requests should enter the same unattended pipeline as production trigger handling.
-- **CONSEQUENCES:** Operators now enqueue validated requests (`READY`) with explicit confirmation sources and optional dry-run validation; no direct onboarding execution occurs from this helper.
+- **CONSEQUENCES:** Operators now enqueue validated requests with explicit confirmation sources and optional dry-run validation; helper defaults to `HOLD` and requires explicit `READY` approval; no direct onboarding execution occurs from this helper.
 - **ROLLBACK:** Restore the previous direct-execution version of `scripts/live_onboard_test.py` and remove helper references from docs.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_queue.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md
+
+- **DECISION:** Add Rippling/Okta profile enrichment to manual queue ingress so operators can submit primarily by `work_email` (plus `start_date` safety) instead of full profile walls.
+- **CONTEXT:** Manual override entry was still too verbose and error-prone for urgent onboarding; placeholder profile values are unsafe for production.
+- **CONSEQUENCES:** `scripts/live_onboard_test.py` now auto-fills profile fields from integrations when available, auto-generates confirmation evidence from successful lookups, and still requires two-source confirmation plus explicit/known `start_date` for idempotent dedupe.
+- **ROLLBACK:** Revert `servus/core/manual_override_enrichment.py`, `scripts/live_onboard_test.py`, `servus/integrations/rippling.py`, and related test/doc updates.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_enrichment.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/rippling.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_manual_override_enrichment.py

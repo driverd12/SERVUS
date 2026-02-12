@@ -1,7 +1,7 @@
 import logging
 import requests
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 from servus.config import CONFIG
 from servus.models import UserProfile
 
@@ -161,16 +161,6 @@ class RipplingClient:
             
         return None
 
-
-def _response_detail(response):
-    try:
-        payload = response.json()
-        if isinstance(payload, dict):
-            return payload.get("detail") or str(payload)
-        return str(payload)
-    except Exception:
-        return (response.text or "").strip()[:300]
-
     def _build_profile(self, worker_id):
         """
         Fetches full worker details and maps to UserProfile.
@@ -178,14 +168,25 @@ def _response_detail(response):
         url = f"{self.base_url}/workers/{worker_id}?expand=department,employment_type"
         try:
             resp = requests.get(url, headers=self.headers, timeout=10)
-            if resp.status_code != 200: return None
-            
+            if resp.status_code != 200:
+                return None
+
             data = resp.json()
-            
+
             # Safe Parsing
             dept = (data.get("department") or {}).get("name", "Unknown")
             emp_type_obj = data.get("employment_type")
             e_type = emp_type_obj.get("label") if isinstance(emp_type_obj, dict) else "Full-Time"
+
+            first_name = data.get("first_name")
+            last_name = data.get("last_name")
+            preferred_first_name = data.get("preferred_first_name")
+            user_id = data.get("user_id")
+            if isinstance(user_id, str) and user_id.strip() and (not first_name or not last_name):
+                user_name = self._fetch_user_name_fields(user_id)
+                first_name = first_name or user_name.get("first_name")
+                last_name = last_name or user_name.get("last_name")
+                preferred_first_name = preferred_first_name or user_name.get("preferred_first_name")
 
             title_value = data.get("title")
             if isinstance(title_value, dict):
@@ -207,11 +208,19 @@ def _response_detail(response):
                 manager_email = manager_value
 
             personal_email = data.get("personal_email")
-            location = data.get("location") or "US"
-            
+            location = data.get("country")
+            if isinstance(location, dict):
+                location = location.get("code") or location.get("name")
+            if not isinstance(location, str) or not location.strip():
+                raw_location = data.get("location")
+                location = raw_location if isinstance(raw_location, str) else "US"
+            location = location.strip() if isinstance(location, str) else "US"
+            if not location:
+                location = "US"
+
             return UserProfile(
-                first_name=data.get("first_name"),
-                last_name=data.get("last_name"),
+                first_name=first_name,
+                last_name=last_name,
                 work_email=data.get("work_email"),
                 personal_email=personal_email,
                 department=dept,
@@ -220,11 +229,54 @@ def _response_detail(response):
                 employment_type=e_type,
                 start_date=data.get("start_date"),
                 location=location,
-                preferred_first_name=data.get("preferred_first_name"),
-                # Rippling doesn't always expose photo URL in API v1 easily, 
+                preferred_first_name=preferred_first_name,
+                # Rippling doesn't always expose photo URL in API v1 easily,
                 # but we can try to map it if we find the field.
-                profile_picture_url=data.get("photo") 
+                profile_picture_url=data.get("photo"),
             )
         except Exception as e:
             logger.error(f"❌ Error building profile for {worker_id}: {e}")
             return None
+
+    def _fetch_user_name_fields(self, user_id):
+        url = f"{self.base_url}/users/{user_id}"
+        try:
+            resp = requests.get(url, headers=self.headers, timeout=10)
+            if resp.status_code != 200:
+                logger.warning(
+                    "⚠️ Rippling user lookup failed: user_id=%s status=%s detail=%s",
+                    user_id,
+                    resp.status_code,
+                    _response_detail(resp),
+                )
+                return {}
+
+            data = resp.json()
+            name = data.get("name") if isinstance(data, dict) else {}
+            if not isinstance(name, dict):
+                return {}
+
+            first_name = name.get("given_name")
+            last_name = name.get("family_name")
+            preferred = name.get("preferred_given_name")
+            result = {}
+            if isinstance(first_name, str) and first_name.strip():
+                result["first_name"] = first_name.strip()
+            if isinstance(last_name, str) and last_name.strip():
+                result["last_name"] = last_name.strip()
+            if isinstance(preferred, str) and preferred.strip():
+                result["preferred_first_name"] = preferred.strip()
+            return result
+        except Exception as exc:
+            logger.warning("⚠️ Rippling user lookup exception for user_id=%s: %s", user_id, exc)
+            return {}
+
+
+def _response_detail(response):
+    try:
+        payload = response.json()
+        if isinstance(payload, dict):
+            return payload.get("detail") or str(payload)
+        return str(payload)
+    except Exception:
+        return (response.text or "").strip()[:300]

@@ -89,3 +89,15 @@
 - **CONSEQUENCES:** `scripts/live_onboard_test.py` now auto-fills profile fields from integrations when available, auto-generates confirmation evidence from successful lookups, and still requires two-source confirmation plus explicit/known `start_date` for idempotent dedupe.
 - **ROLLBACK:** Revert `servus/core/manual_override_enrichment.py`, `scripts/live_onboard_test.py`, `servus/integrations/rippling.py`, and related test/doc updates.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_enrichment.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/rippling.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_manual_override_enrichment.py
+
+- **DECISION:** Fix `RipplingClient._build_profile` to be a real class method and add a regression unit test to prevent silent enrichment failures.
+- **CONTEXT:** A bad indentation placed `_build_profile` under `_response_detail`, so email lookups could fail at runtime with swallowed attribute errors even when API scopes were correct.
+- **CONSEQUENCES:** Worker profile enrichment now executes as designed; failures reflect true API/data issues instead of structural method wiring bugs.
+- **ROLLBACK:** Revert `servus/integrations/rippling.py`, remove `tests_python/test_rippling_client.py`, and undo the inspection checklist update.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/rippling.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_rippling_client.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md
+
+- **DECISION:** Add CLI shortcuts for manual override confirmations so operators can provide immutable IDs directly (`--rippling-worker-id`, `--freshservice-ticket-id`) without hand-building source strings.
+- **CONTEXT:** Urgent off-cycle onboarding required too much manual typing, increasing operator friction and typo risk.
+- **CONSEQUENCES:** Manual queue ingress now supports concise commands from email + two IDs; Freshservice ticket shorthand (`INC-140`) and ticket URLs normalize to canonical `freshservice:ticket_id:<id>`.
+- **ROLLBACK:** Revert `scripts/live_onboard_test.py`, remove `tests_python/test_live_onboard_cli_shortcuts.py`, and revert related examples in `docs/Onboarding.md`.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_live_onboard_cli_shortcuts.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md

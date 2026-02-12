@@ -62,6 +62,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--location", default="US")
     parser.add_argument("--confirmation-source-a")
     parser.add_argument("--confirmation-source-b")
+    parser.add_argument(
+        "--rippling-worker-id",
+        help="Shortcut for confirmation source A. Expands to rippling:worker_id:<id>.",
+    )
+    parser.add_argument(
+        "--freshservice-ticket-id",
+        help="Shortcut for confirmation source B. Expands to freshservice:ticket_id:<id>. Accepts 140, INC-140, or ticket URL.",
+    )
     parser.add_argument("--reason", default="")
     parser.add_argument(
         "--skip-integration-lookup",
@@ -228,6 +236,8 @@ def _resolve_confirmation_sources(
     if args.confirmation_source_b:
         requested.append(args.confirmation_source_b.strip())
 
+    requested.extend(_shortcut_confirmation_sources(args))
+
     for source in auto_sources:
         if source:
             requested.append(source)
@@ -251,6 +261,63 @@ def _resolve_confirmation_sources(
         )
 
     return deduped[:2]
+
+
+def _shortcut_confirmation_sources(args: argparse.Namespace) -> List[str]:
+    sources: List[str] = []
+
+    worker_id = _normalize_rippling_worker_id(args.rippling_worker_id)
+    if worker_id:
+        sources.append(f"rippling:worker_id:{worker_id}")
+
+    ticket_id = _normalize_freshservice_ticket_id(args.freshservice_ticket_id)
+    if ticket_id:
+        sources.append(f"freshservice:ticket_id:{ticket_id}")
+
+    return sources
+
+
+def _normalize_rippling_worker_id(raw: Any) -> str:
+    value = str(raw or "").strip()
+    if not value:
+        return ""
+
+    lowered = value.lower()
+    prefix = "rippling:worker_id:"
+    if lowered.startswith(prefix):
+        return value[len(prefix):].strip()
+
+    short_prefix = "worker_id:"
+    if lowered.startswith(short_prefix):
+        return value[len(short_prefix):].strip()
+
+    return value
+
+
+def _normalize_freshservice_ticket_id(raw: Any) -> str:
+    value = str(raw or "").strip()
+    if not value:
+        return ""
+
+    lowered = value.lower()
+    prefix = "freshservice:ticket_id:"
+    if lowered.startswith(prefix):
+        value = value[len(prefix):].strip()
+        lowered = value.lower()
+
+    short_prefix = "ticket_id:"
+    if lowered.startswith(short_prefix):
+        value = value[len(short_prefix):].strip()
+
+    url_match = re.search(r"/tickets/(\d+)", value, flags=re.IGNORECASE)
+    if url_match:
+        return url_match.group(1)
+
+    inc_match = re.match(r"(?i)^inc[-_ ]?(\d+)$", value)
+    if inc_match:
+        return inc_match.group(1)
+
+    return value
 
 
 if __name__ == "__main__":

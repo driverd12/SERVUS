@@ -43,12 +43,11 @@ The helper defaults to `HOLD` for safety.
 Dry-run validation:
 
 ```bash
-# Minimal: provide email + start date, let Rippling/Okta fill the rest.
+# Minimal: provide email + immutable Rippling/Freshservice IDs.
 python3 scripts/live_onboard_test.py \
   --work-email kayla.durgee@boom.aero \
-  --start-date 2026-02-17 \
-  --confirmation-source-a Rippling-Manual-Approval-123 \
-  --confirmation-source-b Freshservice-Ticket-456 \
+  --rippling-worker-id 697924b36aa907afbec5b964 \
+  --freshservice-ticket-id 140 \
   --reason "Urgent onboarding" \
   --dry-run
 ```
@@ -58,20 +57,18 @@ Queue for scheduler pickup:
 ```bash
 # 1) Stage request as HOLD (safe default)
 python3 scripts/live_onboard_test.py \
-  --request-id REQ-20260212-kayla-001 \
   --work-email kayla.durgee@boom.aero \
-  --start-date 2026-02-17 \
-  --confirmation-source-a Rippling-Manual-Approval-123 \
-  --confirmation-source-b Freshservice-Ticket-456 \
+  --rippling-worker-id 697924b36aa907afbec5b964 \
+  --freshservice-ticket-id 140 \
   --reason "Urgent onboarding"
 
 # 2) Approve for execution (switch to READY)
+# Note: if request_id was auto-generated above, copy it from command output.
 python3 scripts/live_onboard_test.py \
   --request-id REQ-20260212-kayla-001 \
   --work-email kayla.durgee@boom.aero \
-  --start-date 2026-02-17 \
-  --confirmation-source-a Rippling-Manual-Approval-123 \
-  --confirmation-source-b Freshservice-Ticket-456 \
+  --rippling-worker-id 697924b36aa907afbec5b964 \
+  --freshservice-ticket-id 140 \
   --reason "Urgent onboarding" \
   --allow-update \
   --ready
@@ -80,6 +77,7 @@ python3 scripts/live_onboard_test.py \
 Important:
 - `HOLD` rows are not processed.
 - `READY` rows are processed on the next scheduler cycle.
+- `request_id` is optional on insert and auto-generated if omitted.
 - You can also approve by editing the CSV row status to `READY`.
 - If Rippling lookup cannot supply `start_date`, pass `--start-date` explicitly (kept required for dedupe safety).
 ## Manual Onboarding Best Practices

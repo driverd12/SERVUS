@@ -125,3 +125,9 @@
 - **CONSEQUENCES:** Slack/Zoom/Linear/Ramp/Brivo/Okta/Google steps now return richer `ok/detail` outcomes used by per-step notifications (for example, "already exists", "SCIM lag skip", or "config missing skip").
 - **ROLLBACK:** Revert integration updates and registry/tests, then restart scheduler to restore legacy bool-only behavior.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/slack.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/zoom.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/linear.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/ramp.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/brivo.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/google_gam.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/okta.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_google_gam_group_semantics.py
+
+- **DECISION:** Pin `pyjwt` and `cryptography` in Python runtime dependencies to make Apple ABM integration imports deterministic across environments.
+- **CONTEXT:** `servus/integrations/apple.py` imports `jwt` at module load time; environments built strictly from `requirements.txt` could crash startup with `ModuleNotFoundError` even if local developer machines pass.
+- **CONSEQUENCES:** Fresh environments install required crypto/JWT libraries by default, reducing startup drift between local, NOC, and headless hosts.
+- **ROLLBACK:** Remove `pyjwt`/`cryptography` from `requirements.txt` and reinstall dependencies.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/requirements.txt, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/apple.py

@@ -1,15 +1,23 @@
 import time
-import jwt  # pip install pyjwt cryptography
 import requests
 import logging
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.apple")
 
+try:
+    import jwt  # pip install pyjwt cryptography
+except ModuleNotFoundError:
+    jwt = None
+
 def get_apple_token():
     """
     Generates a JWT Client Assertion and exchanges it for an Access Token.
     """
+    if jwt is None:
+        logger.error("ABM dependency missing: install pyjwt and cryptography.")
+        return None
+
     private_key_path = CONFIG.get("ABM_PRIVATE_KEY_PATH", "certs/servus_abm.pem")
     client_id = CONFIG.get("ABM_CLIENT_ID")
     key_id = CONFIG.get("ABM_KEY_ID")

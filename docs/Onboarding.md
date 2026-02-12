@@ -37,6 +37,20 @@ The opposite of [[Offboarding]]!
 - If onboarding fails, the row is marked `ERROR` with `last_error` to prevent retry loops.
 - If the user/start-date combination was already successfully onboarded, the row is automatically removed as already satisfied.
 
+### Slack notification mode
+
+- Default mode is `summary`: one start notification and one consolidated run summary notification.
+- Use `SERVUS_SLACK_NOTIFICATION_MODE=verbose` for step-by-step notifications.
+- Use `SERVUS_SLACK_NOTIFICATION_MODE=final_only` to suppress start notifications and send final summary only.
+
+### Brivo/badge fallback behavior
+
+- If SQS badge queue is unavailable or push fails, the onboarding run no longer hard-fails on badge step alone.
+- SERVUS posts a manual action notification to Slack:
+  - "Create Brivo account and print badge manually"
+  - user details (name/email/title/manager)
+  - profile image URL (best effort from Rippling/Okta)
+
 ### Queue submission helper (headless-safe)
 
 Use `scripts/live_onboard_test.py` to enqueue a request instead of executing onboarding directly.

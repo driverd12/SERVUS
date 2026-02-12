@@ -139,6 +139,7 @@ CONFIG = {
 
     # Notifications
     "SLACK_WEBHOOK_URL": env_config.get("SERVUS_SLACK_WEBHOOK_URL"),
+    "SLACK_NOTIFICATION_MODE": env_config.get("SERVUS_SLACK_NOTIFICATION_MODE", "summary"),
 
     # New SaaS
     "LINEAR_API_KEY": env_config.get("SERVUS_LINEAR_API_KEY"),

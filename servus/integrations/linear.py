@@ -41,21 +41,37 @@ class LinearClient:
         Invites a user to the workspace.
         """
         mutation = """
-        mutation UserInvite($email: String!, $role: UserRole!) {
-            userInvite(input: { email: $email, role: $role }) {
+        mutation OrganizationInviteCreate($input: OrganizationInviteCreateInput!) {
+            organizationInviteCreate(input: $input) {
                 success
-                user { id email }
+                organizationInvite {
+                    id
+                    email
+                    role
+                    acceptedAt
+                }
             }
         }
         """
-        variables = {"email": email, "role": role.upper()} # ADMIN, GUEST, MEMBER
+        normalized_role = _normalize_invite_role(role)
+        variables = {
+            "input": {
+                "email": email,
+                "role": normalized_role,  # owner/admin/guest/user/app
+            }
+        }
         
-        logger.info(f"🚀 Linear: Inviting {email} as {role}...")
+        logger.info(f"🚀 Linear: Inviting {email} as {normalized_role}...")
         result = self._query(mutation, variables)
         
-        if result and result.get("data", {}).get("userInvite", {}).get("success"):
+        payload = (
+            (result or {})
+            .get("data", {})
+            .get("organizationInviteCreate", {})
+        )
+        if payload.get("success"):
             logger.info(f"✅ Linear: Invited {email}")
-            return {"ok": True, "detail": f"Invited {email} to Linear as {role}."}
+            return {"ok": True, "detail": f"Invited {email} to Linear as {normalized_role}."}
 
         errors = result.get("errors", []) if result else []
         if _is_already_exists_error(errors):
@@ -118,8 +134,8 @@ def provision_user(context):
     if not client.api_key:
         return {"ok": True, "detail": "LINEAR_API_KEY missing; skipped Linear invite."}
     # Logic to determine role based on empType?
-    # Defaulting to MEMBER for FTE, GUEST for others
-    role = "MEMBER" if "full-time" in user.employment_type.lower() else "GUEST"
+    # Defaulting to "user" for FTE, "guest" for others.
+    role = "user" if "full-time" in user.employment_type.lower() else "guest"
     return client.invite_user(user.work_email, role)
 
 def verify_deprovisioned(context):
@@ -159,3 +175,16 @@ def _format_errors(errors):
         if message:
             return str(message)
     return str(first)
+
+
+def _normalize_invite_role(role):
+    normalized = str(role or "").strip().lower()
+    mapping = {
+        "member": "user",
+        "user": "user",
+        "guest": "guest",
+        "admin": "admin",
+        "owner": "owner",
+        "app": "app",
+    }
+    return mapping.get(normalized, "guest")

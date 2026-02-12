@@ -131,3 +131,27 @@
 - **CONSEQUENCES:** Fresh environments install required crypto/JWT libraries by default, reducing startup drift between local, NOC, and headless hosts.
 - **ROLLBACK:** Remove `pyjwt`/`cryptography` from `requirements.txt` and reinstall dependencies.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/requirements.txt, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/apple.py
+
+- **DECISION:** Switch default Slack run reporting to consolidated summaries and keep step-level notifications behind an explicit verbose mode.
+- **CONTEXT:** Per-step start/result/failure notifications generated high-volume alert noise and obscured the actual onboarding outcome.
+- **CONSEQUENCES:** Default webhook output is now start + final summary (or final-only if configured), while detailed step spam is opt-in via `SERVUS_SLACK_NOTIFICATION_MODE=verbose`.
+- **ROLLBACK:** Revert `servus/orchestrator.py`, `servus/notifier.py`, and related tests/config keys to restore always-on step-level messaging.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/orchestrator.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/notifier.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/config.py, /Users/dan.driver/Cursor_projects/python/SERVUS/.env.example
+
+- **DECISION:** Make Brivo badge queue failures non-blocking by posting a manual Slack action card (with best-effort profile image URL) instead of hard-failing onboarding.
+- **CONTEXT:** Badge queue infrastructure may be intentionally offline during rollout/testing; blocking onboarding on SQS connectivity creates avoidable operator churn.
+- **CONSEQUENCES:** On badge queue errors, SERVUS now emits a single manual task notification ("create Brivo account + print badge") and continues onboarding flow, preserving operational visibility without aborting run.
+- **ROLLBACK:** Revert `servus/integrations/brivo.py` and tests to restore hard-fail behavior on SQS failures.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/brivo.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/notifier.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_brivo_manual_fallback.py
+
+- **DECISION:** Update Linear onboarding invite mutation to `organizationInviteCreate` with `UserRoleType` role values.
+- **CONTEXT:** Existing mutation (`userInvite` + `UserRole`) no longer matches current Linear schema and fails with GraphQL validation errors.
+- **CONSEQUENCES:** Linear invite step now targets active schema primitives and normalizes role values (`user`, `guest`, etc.) for reliable invite creation.
+- **ROLLBACK:** Revert `servus/integrations/linear.py` and tests to previous mutation implementation.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/linear.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_linear_invite_mutation.py
+
+- **DECISION:** Add an integration preflight check script (`scripts/preflight_check.py`) to validate Google, Slack, Linear, and Brivo connectivity before runtime.
+- **CONTEXT:** Operators needed a way to verify critical integration health and credentials without running a full onboarding/offboarding workflow.
+- **CONSEQUENCES:** New CLI tool provides a concise status table; supports `--strict` mode for CI/CD or hard-gated checks; reduces runtime surprises.
+- **ROLLBACK:** Remove `scripts/preflight_check.py`, `tests_python/test_preflight_check.py`, and revert `rolling_notes_for_servus.md`.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_preflight_check.py

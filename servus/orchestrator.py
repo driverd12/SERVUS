@@ -28,7 +28,7 @@ class Orchestrator:
         request_id = self.ctx.get("request_id")
         
         # Notify Start (Only if not dry run, to avoid spam during testing)
-        if not dry_run:
+        if not dry_run and self.notifier.allow_start_notification():
             self.notifier.notify_start(
                 self.wf.name,
                 user_email,
@@ -38,7 +38,7 @@ class Orchestrator:
 
         for index, step in enumerate(self.wf.steps, start=1):
             self.log.info(f"[{'DRY' if dry_run else 'RUN'}] {step.id}: {step.description} :: {step.action or 'manual'}")
-            if not dry_run:
+            if not dry_run and self.notifier.allow_step_notifications():
                 self.notifier.notify_step_start(
                     self.wf.name,
                     user_email,
@@ -73,9 +73,12 @@ class Orchestrator:
             if step.type == 'action':
                 if not step.action:
                     self.log.error(f"Step {step.id} is type 'action' but has no action defined.")
-                    failures.append({"step_id": step.id, "reason": "missing-action"})
+                    failure_detail = "Step is type 'action' but no action was defined."
+                    failures.append(
+                        {"step_id": step.id, "reason": "missing-action", "detail": failure_detail}
+                    )
                     failed_steps += 1
-                    if not dry_run:
+                    if not dry_run and self.notifier.allow_step_notifications():
                         self.notifier.notify_step_result(
                             self.wf.name,
                             user_email,
@@ -83,7 +86,7 @@ class Orchestrator:
                             index,
                             step_total,
                             "failed",
-                            detail="Step is type 'action' but no action was defined.",
+                            detail=failure_detail,
                             trigger_source=trigger_source,
                             request_id=request_id,
                         )
@@ -93,9 +96,12 @@ class Orchestrator:
                 func = ACTIONS.get(step.action)
                 if not func:
                     self.log.error(f"Action '{step.action}' not found in registry (Check servus/actions.py imports).")
-                    failures.append({"step_id": step.id, "reason": "action-not-found"})
+                    failure_detail = f"Action '{step.action}' not found in registry."
+                    failures.append(
+                        {"step_id": step.id, "reason": "action-not-found", "detail": failure_detail}
+                    )
                     failed_steps += 1
-                    if not dry_run:
+                    if not dry_run and self.notifier.allow_step_notifications():
                         self.notifier.notify_step_result(
                             self.wf.name,
                             user_email,
@@ -103,7 +109,7 @@ class Orchestrator:
                             index,
                             step_total,
                             "failed",
-                            detail=f"Action '{step.action}' not found in registry.",
+                            detail=failure_detail,
                             trigger_source=trigger_source,
                             request_id=request_id,
                         )
@@ -118,7 +124,7 @@ class Orchestrator:
                     if action_ok:
                         self.log.info(f"   ✅ Success")
                         successful_steps += 1
-                        if not dry_run:
+                        if not dry_run and self.notifier.allow_step_notifications():
                             self.notifier.notify_step_result(
                                 self.wf.name,
                                 user_email,
@@ -132,9 +138,36 @@ class Orchestrator:
                             )
                     else:
                         self.log.info("   ⚠️  Action returned failure")
+                        failure_detail = action_detail or "Action returned a failure outcome."
+                        failures.append(
+                            {
+                                "step_id": step.id,
+                                "reason": "action-returned-false",
+                                "detail": failure_detail,
+                            }
+                        )
                         if not dry_run:
-                            failures.append({"step_id": step.id, "reason": "action-returned-false"})
                             failed_steps += 1
+                            if self.notifier.allow_step_notifications():
+                                self.notifier.notify_step_result(
+                                    self.wf.name,
+                                    user_email,
+                                    step.id,
+                                    index,
+                                    step_total,
+                                    "failed",
+                                    detail=failure_detail,
+                                    trigger_source=trigger_source,
+                                    request_id=request_id,
+                                )
+                            # We continue for now, but in a strict mode we might break.
+
+                except Exception as e:
+                    failures.append({"step_id": step.id, "reason": str(e), "detail": str(e)})
+                    self.log.error(f"   ❌ Exception: {str(e)}")
+                    if not dry_run:
+                        failed_steps += 1
+                        if self.notifier.allow_step_notifications():
                             self.notifier.notify_step_result(
                                 self.wf.name,
                                 user_email,
@@ -142,71 +175,25 @@ class Orchestrator:
                                 index,
                                 step_total,
                                 "failed",
-                                detail=action_detail or "Action returned a failure outcome.",
+                                detail=str(e),
                                 trigger_source=trigger_source,
                                 request_id=request_id,
                             )
-                            self.notifier.notify_failure(
-                                self.wf.name,
-                                user_email,
-                                step.id,
-                                action_detail or "Action returned failure",
-                                trigger_source=trigger_source,
-                                request_id=request_id,
-                            )
-                            # We continue for now, but in a strict mode we might break.
-
-                except Exception as e:
-                    failures.append({"step_id": step.id, "reason": str(e)})
-                    self.log.error(f"   ❌ Exception: {str(e)}")
-                    if not dry_run:
-                        failed_steps += 1
-                        self.notifier.notify_step_result(
-                            self.wf.name,
-                            user_email,
-                            step.id,
-                            index,
-                            step_total,
-                            "failed",
-                            detail=str(e),
-                            trigger_source=trigger_source,
-                            request_id=request_id,
-                        )
-                        self.notifier.notify_failure(
-                            self.wf.name,
-                            user_email,
-                            step.id,
-                            str(e),
-                            trigger_source=trigger_source,
-                            request_id=request_id,
-                        )
 
         success = len(failures) == 0
         self.log.info(f"Workflow Complete. success={success}")
-        summary = (
-            f"steps_total={step_total}, steps_succeeded={successful_steps}, "
-            f"steps_failed={failed_steps}"
-        )
         if not dry_run:
-             if success:
-                 self.notifier.notify_success(
-                     self.wf.name,
-                     user_email,
-                     summary=summary,
-                     trigger_source=trigger_source,
-                     request_id=request_id,
-                 )
-             else:
-                 summary = "; ".join(f"{f['step_id']} ({f['reason']})" for f in failures[:3])
-                 self.notifier.notify_failure(
-                     self.wf.name,
-                     user_email,
-                     "workflow",
-                     summary,
-                     summary=f"steps_total={step_total}, steps_succeeded={successful_steps}, steps_failed={failed_steps}",
-                     trigger_source=trigger_source,
-                     request_id=request_id,
-                 )
+            self.notifier.notify_run_summary(
+                self.wf.name,
+                user_email,
+                success=success,
+                step_total=step_total,
+                step_succeeded=successful_steps,
+                step_failed=failed_steps,
+                failures=failures[:10],
+                trigger_source=trigger_source,
+                request_id=request_id,
+            )
 
         return {
             "success": success,

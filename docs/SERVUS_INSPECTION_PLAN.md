@@ -20,7 +20,8 @@ Run these checks when validating local IDE continuity infrastructure:
 - Mutating tools should reject missing or conflicting idempotency metadata (`mutation.check` can preflight this).
 - `retrieval.hybrid` and `query.plan` should return citation-backed local evidence.
 - `incident.open` and `incident.timeline` should preserve operational breadcrumbs for follow-up work.
-- If `SERVUS_SLACK_WEBHOOK_URL` is set, onboarding/offboarding should emit start, per-step progress, and final summary notifications.
+- If `SERVUS_SLACK_WEBHOOK_URL` is set, onboarding/offboarding should emit consolidated run-level notifications by default.
+- If `SERVUS_SLACK_NOTIFICATION_MODE=verbose`, verify step-level notifications are emitted.
 
 ## 1.2 Scheduler Manual Override Queue Checks
 
@@ -35,6 +36,7 @@ Run these checks when validating urgent/manual onboarding support:
 - Confirm `HOLD` rows are ignored and only `READY` rows are processed.
 - Add a `READY` row with future `start_date` and verify scheduler defers execution until eligible.
 - Add the same row with `allow_before_start_date=true` and verify it executes immediately.
+- Validate Brivo fallback: when SQS is unavailable, verify workflow posts a manual Slack instruction and continues without hard-failing on badge step.
 - Add a valid `READY` row to the override CSV and verify one onboarding run occurs.
 - Confirm the completed row is removed from the CSV after successful onboarding.
 - Add an invalid `READY` row (for example identical confirmation sources) and verify it is marked `ERROR`.

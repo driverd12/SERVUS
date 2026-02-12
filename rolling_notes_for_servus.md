@@ -71,3 +71,15 @@
 - **CONSEQUENCES:** Validation now runs end-to-end with deterministic assertions over all 28 tools, including edge-case failures; test runs avoid polluting the default SQLite store by using a temporary DB path.
 - **ROLLBACK:** Remove `tests/mcp_v02.integration.test.mjs`, remove `test` script in `package.json`, revert `MCP_HUB_DB_PATH` support in `src/server.ts`, and restore prior `adr.create` stdout parsing logic.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/tests/mcp_v02.integration.test.mjs, /Users/dan.driver/Cursor_projects/python/SERVUS/package.json, /Users/dan.driver/Cursor_projects/python/SERVUS/src/server.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/src/tools/adr.ts, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/CONNECT.md
+
+- **DECISION:** Add a scheduler-managed manual onboarding override CSV queue with strict row validation, two-source confirmation metadata, success dedupe, and safe dequeue semantics.
+- **CONTEXT:** Urgent onboarding requests need a controlled override path without hard-coding profiles in scripts, while preserving SERVUS idempotency and audit discipline.
+- **CONSEQUENCES:** Scheduler now reads `READY` rows from `servus_state/manual_onboarding_overrides.csv` (configurable), removes rows only after successful completion, marks failed/invalid rows as `ERROR`, and prevents re-onboarding users already completed for the same email/start-date.
+- **ROLLBACK:** Revert `scripts/scheduler.py`, `servus/core/manual_override_queue.py`, `servus/orchestrator.py`, and config/docs changes; remove `tests_python/test_manual_override_queue.py`; restart scheduler.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/scheduler.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_queue.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/orchestrator.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md
+
+- **DECISION:** Repurpose `scripts/live_onboard_test.py` from direct execution into a headless-safe queue submission helper for the manual override CSV.
+- **CONTEXT:** One-off hardcoded live scripts create operational drift and bypass scheduler controls; manual requests should enter the same unattended pipeline as production trigger handling.
+- **CONSEQUENCES:** Operators now enqueue validated requests (`READY`) with explicit confirmation sources and optional dry-run validation; no direct onboarding execution occurs from this helper.
+- **ROLLBACK:** Restore the previous direct-execution version of `scripts/live_onboard_test.py` and remove helper references from docs.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/live_onboard_test.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/core/manual_override_queue.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md

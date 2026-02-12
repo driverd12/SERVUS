@@ -138,6 +138,14 @@ CONFIG = {
     "ZOOM_CLIENT_ID": env_config.get("SERVUS_ZOOM_CLIENT_ID"),
     "ZOOM_CLIENT_SECRET": env_config.get("SERVUS_ZOOM_CLIENT_SECRET"),
     "RAMP_API_KEY": env_config.get("SERVUS_RAMP_API_KEY"),
+
+    # Scheduler / Manual Override Queue
+    "ONBOARDING_OVERRIDE_CSV": env_config.get(
+        "SERVUS_ONBOARDING_OVERRIDE_CSV", "servus_state/manual_onboarding_overrides.csv"
+    ),
+    "SCHEDULER_STATE_FILE": env_config.get(
+        "SERVUS_SCHEDULER_STATE_FILE", "servus_state/scheduler_state.json"
+    ),
 }
 
 def load_config():

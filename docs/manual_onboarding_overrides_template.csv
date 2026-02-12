@@ -1,0 +1,2 @@
+request_id,status,work_email,first_name,last_name,department,employment_type,start_date,personal_email,title,manager_email,location,confirmation_source_a,confirmation_source_b,reason,last_error,created_at,updated_at
+REQ-0001,HOLD,jane.doe@boom.aero,Jane,Doe,Engineering,Full-Time,2026-02-15,jane.personal@example.com,Software Engineer,manager@boom.aero,US,Rippling-Manual-Approval-1234,Freshservice-Ticket-5678,Urgent day-1 onboarding request,,, 

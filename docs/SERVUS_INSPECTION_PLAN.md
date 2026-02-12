@@ -21,6 +21,18 @@ Run these checks when validating local IDE continuity infrastructure:
 - `retrieval.hybrid` and `query.plan` should return citation-backed local evidence.
 - `incident.open` and `incident.timeline` should preserve operational breadcrumbs for follow-up work.
 
+## 1.2 Scheduler Manual Override Queue Checks
+
+Run these checks when validating urgent/manual onboarding support:
+
+- Validate queue submission helper with `python3 scripts/live_onboard_test.py --dry-run ...`.
+- Confirm scheduler logs the configured manual override CSV path at startup.
+- Confirm `HOLD` rows are ignored and only `READY` rows are processed.
+- Add a valid `READY` row to the override CSV and verify one onboarding run occurs.
+- Confirm the completed row is removed from the CSV after successful onboarding.
+- Add an invalid `READY` row (for example identical confirmation sources) and verify it is marked `ERROR`.
+- Confirm a previously completed email/start-date is skipped and dequeued, not re-onboarded.
+
 ## 2. Architecture Review (The "Wiring")
 
 ### A. Inputs & Triggers

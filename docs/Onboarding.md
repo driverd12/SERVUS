@@ -13,6 +13,67 @@ The opposite of [[Offboarding]]!
   - `source_model` (e.g. model identifier in use)
   - `source_agent` (e.g. `assistant`, `reviewer`)
 - No cloud provider API keys are required for this continuity workflow.
+
+## Scheduler Manual Override Queue (CSV)
+
+- Purpose: support urgent/manual onboarding requests without hard-coding users into scripts.
+- Queue file default: `servus_state/manual_onboarding_overrides.csv` (override with `SERVUS_ONBOARDING_OVERRIDE_CSV`).
+- State file default: `servus_state/scheduler_state.json` (override with `SERVUS_SCHEDULER_STATE_FILE`).
+- Template: `docs/manual_onboarding_overrides_template.csv`.
+
+### Required guardrails for each `READY` row
+
+- `request_id` must be present and unique.
+- Required user fields: `work_email`, `first_name`, `last_name`, `department`, `employment_type`.
+- Two-source confirmation is mandatory: `confirmation_source_a` and `confirmation_source_b` must both be present and distinct.
+
+### Runtime behavior
+
+- Scheduler scans manual overrides every scheduler cycle.
+- Only rows with `status=READY` are processed. `HOLD`/`ERROR` rows are ignored.
+- On successful onboarding, the row is removed from the CSV.
+- If onboarding fails, the row is marked `ERROR` with `last_error` to prevent retry loops.
+- If the user/start-date combination was already successfully onboarded, the row is automatically removed as already satisfied.
+
+### Queue submission helper (headless-safe)
+
+Use `scripts/live_onboard_test.py` to enqueue a request instead of executing onboarding directly.
+
+Dry-run validation:
+
+```bash
+python3 scripts/live_onboard_test.py \
+  --first-name Kayla \
+  --last-name Durgee \
+  --work-email kayla.durgee@boom.aero \
+  --department IT \
+  --employment-type "Salaried, full-time" \
+  --start-date 2026-02-17 \
+  --manager-email alex.mccoy@boom.aero \
+  --confirmation-source-a Rippling-Manual-Approval-123 \
+  --confirmation-source-b Freshservice-Ticket-456 \
+  --reason "Urgent onboarding" \
+  --dry-run
+```
+
+Queue for scheduler pickup:
+
+```bash
+python3 scripts/live_onboard_test.py \
+  --first-name Kayla \
+  --last-name Durgee \
+  --work-email kayla.durgee@boom.aero \
+  --department IT \
+  --employment-type "Salaried, full-time" \
+  --start-date 2026-02-17 \
+  --manager-email alex.mccoy@boom.aero \
+  --confirmation-source-a Rippling-Manual-Approval-123 \
+  --confirmation-source-b Freshservice-Ticket-456 \
+  --reason "Urgent onboarding"
+```
+
+Important:
+- Do not queue `READY` rows until you are ready for unattended execution on the next scheduler cycle.
 ## Manual Onboarding Best Practices
 - Always copy-and-paste usernames and names.  If you type usernames or names anywhere, you will eventually make a typo.  Typos in usernames are time consuming to correct.  If there is a Typo in a name, best that it comes from upstream-- not from you.
 ## Create a checklist document

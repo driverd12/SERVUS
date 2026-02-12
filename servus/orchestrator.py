@@ -16,6 +16,7 @@ class Orchestrator:
     def run(self, dry_run=False):
         # 🛠️ FIX: Removed reference to self.wf.version
         self.log.info(f"Workflow: {self.wf.name} | dry_run={dry_run}")
+        failures = []
         
         # Inject dry_run into context so actions can see it
         self.ctx['dry_run'] = dry_run
@@ -39,12 +40,14 @@ class Orchestrator:
             if step.type == 'action':
                 if not step.action:
                     self.log.error(f"Step {step.id} is type 'action' but has no action defined.")
+                    failures.append({"step_id": step.id, "reason": "missing-action"})
                     continue
                 
                 # Look up the function in our registry
                 func = ACTIONS.get(step.action)
                 if not func:
                     self.log.error(f"Action '{step.action}' not found in registry (Check servus/actions.py imports).")
+                    failures.append({"step_id": step.id, "reason": "action-not-found"})
                     continue
 
                 # Execute
@@ -61,17 +64,31 @@ class Orchestrator:
                         
                         # If a step explicitly returns False in LIVE mode, it's a failure.
                         if result is False and not dry_run:
+                             failures.append({"step_id": step.id, "reason": "action-returned-false"})
                              user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
                              self.notifier.notify_failure(self.wf.name, user_email, step.id, "Action returned False")
                              # We continue for now, but in a strict mode we might break.
 
                 except Exception as e:
+                    failures.append({"step_id": step.id, "reason": str(e)})
                     self.log.error(f"   ❌ Exception: {str(e)}")
                     if not dry_run:
                         user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
                         self.notifier.notify_failure(self.wf.name, user_email, step.id, str(e))
 
-        self.log.info("Workflow Complete.")
+        success = len(failures) == 0
+        self.log.info(f"Workflow Complete. success={success}")
         if not dry_run:
              user_email = self.ctx.get("user_profile").work_email if self.ctx.get("user_profile") else "Unknown"
-             self.notifier.notify_success(self.wf.name, user_email)
+             if success:
+                 self.notifier.notify_success(self.wf.name, user_email)
+             else:
+                 summary = "; ".join(f"{f['step_id']} ({f['reason']})" for f in failures[:3])
+                 self.notifier.notify_failure(self.wf.name, user_email, "workflow", summary)
+
+        return {
+            "success": success,
+            "failures": failures,
+            "workflow": self.wf.name,
+            "dry_run": dry_run,
+        }

@@ -32,6 +32,31 @@ def _apple_check_device_assignment(context):
         return result
     return bool(result)
 
+
+def _with_offboarding_guard(action_name, func):
+    """
+    Defense-in-depth: even if workflow gating is bypassed, destructive offboarding
+    actions still evaluate protected-target policy before execution.
+    """
+
+    def _guarded(context):
+        guard_context = dict(context or {})
+        guard_context["offboarding_action_name"] = action_name
+        guard_result = builtin.validate_target_email(guard_context)
+
+        if isinstance(guard_result, dict):
+            if not bool(guard_result.get("ok")):
+                return guard_result
+        elif guard_result is False:
+            return {
+                "ok": False,
+                "detail": f"Offboarding safety guard blocked action '{action_name}'.",
+            }
+
+        return func(context)
+
+    return _guarded
+
 # Registry mapping YAML strings to Python functions
 ACTIONS = {
     # Built-in Logic
@@ -41,25 +66,27 @@ ACTIONS = {
     # Active Directory
     "ad.provision_user": ad.validate_user_exists, # Remapped since we don't provision anymore
     "ad.validate_user_exists": ad.validate_user_exists,
-    "ad.verify_user_disabled": ad.ensure_user_disabled, # Remapped to the new safety net function
-    "ad.ensure_user_disabled": ad.ensure_user_disabled,
+    "ad.verify_user_disabled": _with_offboarding_guard("ad.verify_user_disabled", ad.ensure_user_disabled),
+    "ad.ensure_user_disabled": _with_offboarding_guard("ad.ensure_user_disabled", ad.ensure_user_disabled),
     
     # Okta
     "okta.find_user": okta.wait_for_user, # Remapped to wait loop
     "okta.assign_apps": okta.assign_custom_groups, # Remapped to group assignment
-    "okta.deactivate_user": okta.deactivate_user,
+    "okta.deactivate_user": _with_offboarding_guard("okta.deactivate_user", okta.deactivate_user),
     "okta.verify_manager_resolved": okta.verify_manager_resolved,
     
     # Google (GAM)
     "google_gam.wait_for_user_scim": google_gam.wait_for_user_scim,
     "google_gam.move_user_ou": google_gam.move_user_ou,
     "google_gam.add_groups": google_gam.add_groups,
-    "google_gam.deprovision_user": google_gam.deprovision_user,
+    "google_gam.deprovision_user": _with_offboarding_guard(
+        "google_gam.deprovision_user", google_gam.deprovision_user
+    ),
     "google_gam.process_rehire": google_gam.process_rehire,
     
     # Slack
     "slack.add_to_channels": slack.add_to_channels,
-    "slack.deactivate_user": slack.deactivate_user,
+    "slack.deactivate_user": _with_offboarding_guard("slack.deactivate_user", slack.deactivate_user),
 
     # Zoom
     "zoom.configure_user": zoom.configure_user,

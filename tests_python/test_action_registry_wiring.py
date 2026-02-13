@@ -9,6 +9,10 @@ class ActionRegistryWiringTests(unittest.TestCase):
         self.assertIn("google_gam.wait_for_user_scim", actions.ACTIONS)
         self.assertIn("apple.check_device_assignment", actions.ACTIONS)
         self.assertIn("brivo.provision_access", actions.ACTIONS)
+        self.assertIn("okta.deactivate_user", actions.ACTIONS)
+        self.assertIn("ad.verify_user_disabled", actions.ACTIONS)
+        self.assertIn("slack.deactivate_user", actions.ACTIONS)
+        self.assertIn("google_gam.deprovision_user", actions.ACTIONS)
 
     def test_apple_wrapper_skips_when_no_serial_number(self):
         result = actions.ACTIONS["apple.check_device_assignment"](

@@ -49,13 +49,47 @@ Run these checks when validating urgent/manual onboarding support:
 - Add an invalid `READY` row (for example identical confirmation sources) and verify it is marked `ERROR`.
 - Confirm a previously completed email/start-date is skipped and dequeued, not re-onboarded.
 
+## 1.3 Offboarding Automation Checks
+
+Run these checks when validating headless offboarding reliability:
+
+- Confirm scheduler startup logs both modes and paths:
+  - pending offboarding CSV path.
+  - offboarding execution mode (`STAGED`, `AUTO`, or `LIVE`).
+- Confirm protected-target policy is loaded and non-empty before enabling live destructive runs:
+  - policy file path (`SERVUS_PROTECTED_TARGETS_FILE` or default `servus/data/protected_targets.yaml`).
+  - merged policy counts in `python3 scripts/preflight_check.py`.
+  - includes both protected emails and protected usernames (for local-part identities such as admin service users).
+- Confirm offboarding workflow contains the mandatory policy gate step:
+  - `builtin.validate_target_email` must execute before destructive actions.
+- Confirm offboarding workflow contains manager routing gate:
+  - `okta.verify_manager_resolved` must execute before destructive actions.
+- Validate dual-source match path for departures:
+  - Rippling departure candidate with matching Freshservice offboarding ticket should be accepted.
+  - Rippling-only departure should be logged as mismatch and skipped.
+- With `SERVUS_OFFBOARDING_EXECUTION_ENABLED=false`, confirm validated departures are staged into `servus_state/pending_offboards.csv` and no destructive workflow executes.
+- With `SERVUS_OFFBOARDING_EXECUTION_ENABLED=true`, confirm validated departures execute offboarding workflow and are removed from pending CSV on success.
+- With `SERVUS_OFFBOARDING_EXECUTION_MODE=auto`, confirm validated departures execute only when preflight has no blocking issues and protected-target policy is non-empty.
+- Confirm failed live offboarding runs mark pending rows `ERROR` with actionable `last_error`.
+- Confirm reruns do not duplicate successful offboarding for the same `work_email + end_date` key.
+- Confirm CLI offboarding defaults to safety dry-run unless `--execute-live` is provided.
+- Confirm protected targets are blocked in both places:
+  - workflow policy gate blocks the run before destructive steps.
+  - per-action wrappers still block if workflow is invoked without the policy gate.
+- Confirm AD-specific protected OU blocks are active for destructive AD actions:
+  - default pattern `OU=Service Accounts,OU=Boom Users` blocks disable/move.
+  - override pattern list via `SERVUS_PROTECTED_AD_OU_PATTERNS` as needed.
+- Confirm transfer routing behavior:
+  - manager email is resolved before Google deprovision.
+  - Drive, Calendar, and alias routing target the resolved manager email.
+
 ## 2. Architecture Review (The "Wiring")
 
 ### A. Inputs & Triggers
 | Source | Mechanism | Status | Verification Step |
 | :--- | :--- | :--- | :--- |
 | **Rippling (New Hires)** | API Poll (Every 60m) | ✅ Wired | Check `scripts/scheduler.py` logs for "Scanning Rippling". |
-| **Rippling (Departures)** | API Poll (Every 60m) | ⚠️ **Safety Mode** | Verify `pending_offboards.csv` is created instead of auto-running. |
+| **Rippling (Departures)** | API Poll (Every 60m) | ✅ Wired (Staged Default) | Verify dual-validation match and pending CSV staging, then enable live mode explicitly for destructive execution. |
 | **Freshservice** | API Poll (Every 15m) | ✅ Wired | Create a test ticket with "Employee Onboarding - [Name]" and check logs. |
 | **Manual CLI** | `python -m servus` | ✅ Wired | Run `scripts/dry_run_new_hires.py` to test CLI entry point. |
 
@@ -115,21 +149,22 @@ Run these checks when validating urgent/manual onboarding support:
     *   [ ] Did Badge Queue simulate sending a message?
 
 ### Phase 2: The "Trigger" Test (Scheduler)
-1.  **Configure:** Set `dry_run: True` in `scripts/scheduler.py` (temporarily) or rely on the fact that it calls `run_orchestrator` which uses the CLI args (wait, scheduler calls `run_onboarding` which hardcodes `dry_run=False` currently. **Action:** Update scheduler to respect a global dry-run flag for testing).
+1.  **Configure:** Run scheduler in normal mode and keep offboarding safety defaults (`SERVUS_OFFBOARDING_EXECUTION_ENABLED=false`) for destructive-risk isolation.
 2.  **Run:** `python scripts/scheduler.py`
 3.  **Simulate Input:**
-    *   **Rippling:** Hard to mock without a real user. Trust the `audit_new_hires.py` logic.
-    *   **Freshservice:** Create a dummy ticket "Employee Onboarding - Test Bot".
+    *   **Onboarding:** Create matching Rippling + Freshservice onboarding evidence.
+    *   **Offboarding:** Create matching Rippling departure + Freshservice offboarding evidence.
 4.  **Inspect:**
-    *   [ ] Did the scheduler pick up the ticket?
-    *   [ ] Did it launch the workflow?
+    *   [ ] Did onboarding dual-validation launch exactly one onboarding workflow?
+    *   [ ] Did offboarding dual-validation stage a pending row (safety mode)?
 
 ### Phase 3: The "Offboard" Safety Test
 1.  **Run:** `python scripts/scheduler.py`
 2.  **Simulate Input:** (Wait for a real departure or mock the `RipplingClient.get_departures` return).
 3.  **Inspect:**
-    *   [ ] Did it **SKIP** the workflow?
-    *   [ ] Did it write to `pending_offboards.csv`?
+    *   [ ] With `SERVUS_OFFBOARDING_EXECUTION_ENABLED=false`, did it stage in `pending_offboards.csv` and skip destructive workflow?
+    *   [ ] With `SERVUS_OFFBOARDING_EXECUTION_ENABLED=true`, did it run offboarding and remove the pending row on success?
+    *   [ ] On offboarding failure, did the pending row move to `ERROR` with `last_error`?
 
 ---
 

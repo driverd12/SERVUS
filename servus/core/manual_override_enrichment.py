@@ -98,6 +98,7 @@ def _profile_to_defaults(profile: UserProfile) -> Dict[str, str]:
         "department",
         "employment_type",
         "start_date",
+        "end_date",
         "personal_email",
         "title",
         "manager_email",

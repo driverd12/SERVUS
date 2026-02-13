@@ -21,6 +21,7 @@ class UserProfile(BaseModel):
     employment_type: str 
     
     start_date: Optional[str] = None
+    end_date: Optional[str] = None
     location: Optional[str] = "US"
 
     # --- HELPER PROPERTIES (The "Bridge") ---

@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 from servus.config import CONFIG
 from servus.integrations.google_gam import run_gam
 from servus.integrations.linear import LinearClient
+from servus.safety import protected_policy_summary
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -233,6 +234,41 @@ def check_brivo_queue():
         ]
 
 
+def check_protected_target_policy():
+    summary = protected_policy_summary()
+    path = summary["path"]
+    total_rules = int(summary["total_rules"])
+    ad_ou_patterns = [
+        value.strip()
+        for value in str(CONFIG.get("PROTECTED_AD_OU_PATTERNS") or "").split(";")
+        if value.strip()
+    ]
+    if total_rules <= 0:
+        return [
+            (
+                "Protected Targets",
+                f"⚠️ Empty policy in {path}; configure protected emails/usernames/domains/departments/titles before live offboarding.",
+            )
+        ]
+    if not ad_ou_patterns:
+        return [
+            (
+                "Protected Targets",
+                "⚠️ Policy configured but SERVUS_PROTECTED_AD_OU_PATTERNS is empty; "
+                "AD service-account OU protection may be bypassed.",
+            )
+        ]
+    return [
+        (
+            "Protected Targets",
+            "✅ Configured "
+            f"(emails={summary['emails']}, usernames={summary['usernames']}, domains={summary['domains']}, "
+            f"departments={summary['departments']}, titles={summary['titles_contains']}, "
+            f"ad_ou_patterns={len(ad_ou_patterns)})",
+        )
+    ]
+
+
 def _parse_scopes_header(raw_header):
     scopes = set()
     for value in str(raw_header or "").split(","):
@@ -252,7 +288,13 @@ def main():
     print("-" * 90)
 
     # Run checks
-    checks = [check_google_groups, check_slack_scopes, check_linear_connectivity, check_brivo_queue]
+    checks = [
+        check_google_groups,
+        check_slack_scopes,
+        check_linear_connectivity,
+        check_brivo_queue,
+        check_protected_target_policy,
+    ]
 
     failure_count = 0
 

@@ -39,6 +39,28 @@ class OktaClient:
             logger.error(f"❌ Okta API Error: {e}")
             return None
 
+    def get_user_by_id(self, user_id):
+        """
+        Fetches a user by Okta user ID. Returns the user object or None.
+        """
+        if not self.domain or not self.token:
+            logger.error("❌ Okta config missing (DOMAIN or TOKEN).")
+            return None
+
+        target = str(user_id or "").strip()
+        if not target:
+            return None
+
+        url = f"{self.base_url}/users/{target}"
+        try:
+            resp = requests.get(url, headers=self.headers)
+            if resp.status_code == 200:
+                return resp.json()
+            return None
+        except Exception as e:
+            logger.error(f"❌ Okta API Error (get_user_by_id): {e}")
+            return None
+
     def add_user_to_group(self, user_id, group_id):
         """
         Adds a user to a specific Okta group.
@@ -147,11 +169,17 @@ def verify_manager_resolved(context):
     if not user_profile:
         return {"ok": False, "detail": "Missing user_profile in action context."}
     
+    existing_manager = str(getattr(user_profile, "manager_email", "") or "").strip().lower()
+    if existing_manager and "@" in existing_manager:
+        logger.info(f"✅ Okta: Manager already present on profile: {existing_manager}")
+        context["manager_email"] = existing_manager
+        return {"ok": True, "detail": f"Manager already present in profile: {existing_manager}"}
+
     client = OktaClient()
     email = user_profile.work_email
-    
+
     logger.info(f"⏳ Okta: Verifying manager resolution for {email}...")
-    
+
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would check if manager is assigned in Okta.")
         return {"ok": True, "detail": "Dry run: would verify Okta manager mapping."}
@@ -161,20 +189,59 @@ def verify_manager_resolved(context):
     for i in range(max_retries):
         user = client.get_user(email)
         if user:
-            # Check profile.manager or profile.managerId depending on mapping
-            # Usually mapped to 'manager' in profile
-            profile = user.get("profile", {})
-            manager = profile.get("manager") or profile.get("managerId")
-            
-            if manager:
-                logger.info(f"✅ Okta: Manager resolved: {manager}")
-                return {"ok": True, "detail": f"Okta manager resolved: {manager}"}
-        
+            manager_email, manager_label = _resolve_manager_email_from_user(client, user)
+
+            if manager_email:
+                user_profile.manager_email = manager_email
+                context["manager_email"] = manager_email
+                logger.info(f"✅ Okta: Manager resolved: {manager_label}")
+                return {"ok": True, "detail": f"Okta manager resolved: {manager_email}"}
+
         logger.info(f"   ... Waiting for manager assignment ({i+1}/{max_retries})...")
         time.sleep(10)
         
     logger.warning("⚠️ Okta: Manager not resolved after timeout. AD sync might fail.")
     return {"ok": False, "detail": "Manager attribute not resolved in Okta before timeout."}
+
+
+def _resolve_manager_email_from_user(client, user):
+    profile = user.get("profile", {}) if isinstance(user, dict) else {}
+    if not isinstance(profile, dict):
+        return None, ""
+
+    direct_candidates = [
+        profile.get("manager_email"),
+        profile.get("managerEmail"),
+        profile.get("manager"),
+    ]
+    for candidate in direct_candidates:
+        if isinstance(candidate, str) and "@" in candidate:
+            normalized = candidate.strip().lower()
+            return normalized, normalized
+
+    manager_obj = profile.get("manager")
+    if isinstance(manager_obj, dict):
+        for key in ("email", "work_email", "manager_email"):
+            value = manager_obj.get(key)
+            if isinstance(value, str) and "@" in value:
+                normalized = value.strip().lower()
+                return normalized, normalized
+
+    manager_id = profile.get("managerId") or profile.get("manager_id")
+    if isinstance(manager_id, str) and manager_id.strip():
+        manager_user = client.get_user_by_id(manager_id.strip())
+        manager_profile = manager_user.get("profile", {}) if isinstance(manager_user, dict) else {}
+        if isinstance(manager_profile, dict):
+            manager_email = manager_profile.get("email") or manager_profile.get("login")
+            if isinstance(manager_email, str) and "@" in manager_email:
+                normalized = manager_email.strip().lower()
+                return normalized, normalized
+
+    manager_label = profile.get("manager")
+    if isinstance(manager_label, str):
+        return None, manager_label.strip()
+
+    return None, ""
 
 def deactivate_user(context):
     """

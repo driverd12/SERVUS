@@ -57,6 +57,8 @@ class RipplingClient:
                     # Found one! Fetch full details.
                     profile = self._build_profile(w.get("id"))
                     if profile:
+                        if not profile.start_date:
+                            profile.start_date = w.get("start_date")
                         new_hires.append(profile)
                         
             return new_hires
@@ -90,6 +92,8 @@ class RipplingClient:
                 if w.get("end_date") == end_date:
                     profile = self._build_profile(w.get("id"))
                     if profile:
+                        if not profile.end_date:
+                            profile.end_date = w.get("end_date")
                         departures.append(profile)
                         
             return departures
@@ -228,6 +232,7 @@ class RipplingClient:
                 manager_email=manager_email,
                 employment_type=e_type,
                 start_date=data.get("start_date"),
+                end_date=data.get("end_date"),
                 location=location,
                 preferred_first_name=preferred_first_name,
                 # Rippling doesn't always expose photo URL in API v1 easily,

@@ -5,6 +5,18 @@ from servus.config import CONFIG
 
 logger = logging.getLogger("servus.ad")
 
+
+def _protected_ou_patterns():
+    raw = str(CONFIG.get("PROTECTED_AD_OU_PATTERNS") or "").strip()
+    if not raw:
+        return ["OU=Service Accounts,OU=Boom Users"]
+    patterns = []
+    for value in raw.split(";"):
+        cleaned = value.strip()
+        if cleaned:
+            patterns.append(cleaned)
+    return patterns or ["OU=Service Accounts,OU=Boom Users"]
+
 def get_session():
     host = CONFIG.get("AD_HOST")
     user = CONFIG.get("AD_USER")
@@ -123,19 +135,24 @@ def ensure_user_disabled(context):
     base_dn = CONFIG.get("AD_BASE_DN", "DC=boom,DC=local")
     disabled_ou_dn = f"OU=Disabled Users,{base_dn}" 
 
+    protected_ous = _protected_ou_patterns()
+
     logger.info(f"🛡️ AD: Ensuring disable status for {target_email}...")
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would ensure AD account is disabled and in {disabled_ou_dn}")
+        logger.info(f"[DRY-RUN] Would block if user is in protected OUs: {protected_ous}")
         return True
 
     # PowerShell: Check Status and Disable if needed
     # Note: We use SilentlyContinue to suppress errors if Identity search fails initially.
     # The 'try/catch' block handles critical failures.
+    protected_ous_literal = ";".join(protected_ous)
     ps_script = f"""
     $ErrorActionPreference = "Stop"
     try {{
         $u = $null
+        $protectedOuPatterns = "{protected_ous_literal}".Split(';') | Where-Object {{ $_ -and $_.Trim() -ne '' }}
         
         # 1. Try Identity (Exact Match)
         try {{
@@ -173,6 +190,13 @@ def ensure_user_disabled(context):
         if (-not $u) {{
             Write-Output "NOT_FOUND"
             return
+        }}
+
+        foreach ($pattern in $protectedOuPatterns) {{
+            if ($u.DistinguishedName -like "*$pattern*") {{
+                Write-Output "PROTECTED_OU"
+                return
+            }}
         }}
 
         $actions = @()
@@ -214,7 +238,15 @@ def ensure_user_disabled(context):
         if "NOT_FOUND" in output:
             logger.warning(f"⚠️ AD: User {target_email} ({user_profile.first_name} {user_profile.last_name}) not found.")
             return True # Treat as success for idempotency
-            
+
+        if "PROTECTED_OU" in output:
+            logger.error(
+                "🛑 AD: Target %s is in a protected OU (%s). Aborting destructive AD action.",
+                target_email,
+                protected_ous,
+            )
+            return False
+
         if "DISABLED" in output:
             logger.warning(f"🛡️ AD: User was ENABLED. Forced DISABLE.")
         if "MOVED" in output:

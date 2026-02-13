@@ -17,6 +17,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger("servus")
 
+
+def _resolve_effective_dry_run(command, dry_run_flag, execute_live_flag):
+    if execute_live_flag and dry_run_flag:
+        raise ValueError("--execute-live and --dry-run are mutually exclusive.")
+
+    if command != "offboard":
+        return bool(dry_run_flag)
+
+    # Offboarding is safety-staged by default.
+    return not bool(execute_live_flag)
+
 def main():
     parser = argparse.ArgumentParser(description="SERVUS Identity Orchestrator")
     parser.add_argument("command", choices=["onboard", "offboard"])
@@ -28,6 +39,11 @@ def main():
     group.add_argument("--ticket", help="Freshservice Ticket ID to fetch data from")
     
     parser.add_argument("--dry-run", action="store_true", help="Simulate actions")
+    parser.add_argument(
+        "--execute-live",
+        action="store_true",
+        help="Required for LIVE offboarding. Without this, offboard runs in safety dry-run mode.",
+    )
     
     args = parser.parse_args()
     
@@ -75,18 +91,36 @@ def main():
     # 4. Initialize State
     state = RunState()
 
+    try:
+        effective_dry_run = _resolve_effective_dry_run(
+            command=args.command,
+            dry_run_flag=args.dry_run,
+            execute_live_flag=args.execute_live,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    if args.command == "offboard":
+        if args.execute_live:
+            logger.warning("🚨 Offboarding live execution enabled via --execute-live.")
+        else:
+            logger.warning(
+                "🧯 Offboarding safety mode active. Running dry-run by default. "
+                "Pass --execute-live to perform destructive actions."
+            )
+
     # 5. Build Context
     context = {
         "config": config,
         "user_profile": user,
-        "dry_run": args.dry_run
+        "dry_run": effective_dry_run
     }
     
     print_banner()
 
     # 6. Run Orchestrator
     orch = Orchestrator(wf, context, state, logger)
-    orch.run(dry_run=args.dry_run)
+    orch.run(dry_run=effective_dry_run)
 
 def print_banner():
     print(r"""

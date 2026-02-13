@@ -6,8 +6,10 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from servus.orchestrator import run_orchestrator
+from servus.orchestrator import Orchestrator
 from servus.models import UserProfile
+from servus.state import RunState
+from servus.workflow import load_workflow
 
 # Configure Logging
 logging.basicConfig(
@@ -41,14 +43,16 @@ def run_simulation():
     logger.info(f"   Role: {mock_profile.employment_type}")
     logger.info("------------------------------------------------")
 
-    # 2. Run Workflow
+    # 2. Load workflow and run orchestrator in dry-run mode.
     try:
-        # Assuming 'onboard_us' is the workflow name in your yaml files
-        results = run_orchestrator("onboard_us", context)
-        
+        workflow_path = os.path.join("servus", "workflows", "onboard_us.yaml")
+        workflow = load_workflow(workflow_path)
+        state = RunState()
+        orch = Orchestrator(workflow, context, state, logger)
+        result = orch.run(dry_run=True)
+
         logger.info("------------------------------------------------")
-        logger.info("✅ DRY RUN COMPLETE")
-        # logger.info(f"   Results: {results}") 
+        logger.info("✅ DRY RUN COMPLETE (success=%s)", result.get("success"))
     except Exception as e:
         logger.error(f"❌ DRY RUN FAILED: {e}")
         import traceback

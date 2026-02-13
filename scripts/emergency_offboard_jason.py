@@ -71,6 +71,8 @@ def run_emergency_offboard(dry_run=False):
     
     if dry_run:
         cmd.append("--dry-run")
+    else:
+        cmd.append("--execute-live")
         
     # 3. Execute SERVUS
     try:
@@ -99,5 +101,5 @@ def run_emergency_offboard(dry_run=False):
     logger.info("\n🏁 Emergency Sequence Finished.")
 
 if __name__ == "__main__":
-    # Default to Dry Run
-    run_emergency_offboard(dry_run=False)
+    # Safety default: dry run unless explicitly changed by editing this script.
+    run_emergency_offboard(dry_run=True)

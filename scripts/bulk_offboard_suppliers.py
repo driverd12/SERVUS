@@ -118,6 +118,8 @@ def run_offboarding(dry_run=True, limit=None):
         
         if dry_run:
             cmd.append("--dry-run")
+        else:
+            cmd.append("--execute-live")
             
         # 3. Execute SERVUS
         try:

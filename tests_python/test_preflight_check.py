@@ -174,6 +174,52 @@ class TestPreflightCheck(unittest.TestCase):
             self.assertIn("✅", results[0][1])
             self.assertIn("⚠️", results[1][1])
 
+    @patch("scripts.preflight_check.protected_policy_summary")
+    def test_check_protected_target_policy_warns_when_empty(self, summary_mock):
+        summary_mock.return_value = {
+            "path": "servus/data/protected_targets.yaml",
+            "emails": 0,
+            "usernames": 0,
+            "domains": 0,
+            "departments": 0,
+            "titles_contains": 0,
+            "total_rules": 0,
+        }
+        results = preflight_check.check_protected_target_policy()
+        self.assertIn("⚠️", results[0][1])
+        self.assertIn("Empty policy", results[0][1])
+
+    @patch("scripts.preflight_check.protected_policy_summary")
+    def test_check_protected_target_policy_passes_when_configured(self, summary_mock):
+        summary_mock.return_value = {
+            "path": "servus/data/protected_targets.yaml",
+            "emails": 2,
+            "usernames": 3,
+            "domains": 1,
+            "departments": 1,
+            "titles_contains": 2,
+            "total_rules": 6,
+        }
+        results = preflight_check.check_protected_target_policy()
+        self.assertIn("✅", results[0][1])
+        self.assertIn("emails=2", results[0][1])
+
+    @patch("scripts.preflight_check.protected_policy_summary")
+    def test_check_protected_target_policy_warns_when_ad_ou_patterns_missing(self, summary_mock):
+        summary_mock.return_value = {
+            "path": "servus/data/protected_targets.yaml",
+            "emails": 1,
+            "usernames": 1,
+            "domains": 0,
+            "departments": 0,
+            "titles_contains": 0,
+            "total_rules": 2,
+        }
+        with patch.dict(preflight_check.CONFIG, {"PROTECTED_AD_OU_PATTERNS": ""}, clear=False):
+            results = preflight_check.check_protected_target_policy()
+        self.assertIn("⚠️", results[0][1])
+        self.assertIn("PROTECTED_AD_OU_PATTERNS is empty", results[0][1])
+
     def test_cli_help_runs_from_repo(self):
         repo_root = Path(__file__).resolve().parents[1]
         script_path = repo_root / "scripts" / "preflight_check.py"

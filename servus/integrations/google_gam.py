@@ -20,6 +20,19 @@ DEFAULT_GROUP_POLICY = {
     "departments": {},
 }
 
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _is_corporate_email(email):
+    normalized = str(email or "").strip().lower()
+    return bool(normalized) and "@" in normalized and normalized.endswith("@boom.aero")
+
 def run_gam(args):
     cmd = [GAM_PATH] + args
     try:
@@ -123,6 +136,10 @@ def wait_for_user_scim(context):
     email = user.work_email
     
     logger.info(f"⏳ Google: Waiting for SCIM to create {email}...")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would wait for {email} (Simulating success)")
+        return {"ok": True, "detail": "Dry run simulated SCIM wait success."}
     
     start_time = time.time()
     timeout = 600 # 10 minutes
@@ -134,10 +151,6 @@ def wait_for_user_scim(context):
             logger.info(f"✅ Google: User {email} found!")
             return {"ok": True, "detail": "User already exists in Google (SCIM sync complete)."}
         
-        if context.get("dry_run"):
-             logger.info(f"[DRY-RUN] Would wait for {email} (Simulating success)")
-             return {"ok": True, "detail": "Dry run simulated SCIM wait success."}
-
         time.sleep(30)
         
     logger.error(f"❌ Google: Timed out waiting for {email} after {timeout}s")
@@ -152,8 +165,25 @@ def move_user_ou(context):
     if not user:
         return {"ok": False, "detail": "Missing user_profile in action context."}
     email = user.work_email
+
+    # 1. Determine Target OU
+    emp_type = user.employment_type.lower()
+    target_ou = "/empType-CON" # Default
+
+    if "full-time" in emp_type:
+        target_ou = "/empType-FTE"
+    elif "contractor" in emp_type or "1099" in emp_type:
+        target_ou = "/empType-CON"
+    elif "temporary" in emp_type or "intern" in emp_type:
+        target_ou = "/empType-INT"
+    elif "supplier" in emp_type:
+        target_ou = "/empType-SUP"
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would evaluate and move {email} to {target_ou}")
+        return {"ok": True, "detail": f"Dry run: would move user to '{target_ou}'."}
     
-    # 1. Get Current OU
+    # 2. Get Current OU
     success, stdout, _ = run_gam(["info", "user", email])
     if not success:
         if context.get("dry_run"):
@@ -170,24 +200,11 @@ def move_user_ou(context):
                 current_ou = line.split(":", 1)[1].strip()
                 break
             
-    # 2. Safety Check
+    # 3. Safety Check
     protected_ous = ["/SuperAdmins", "/Service Accounts", "/Deprovisioning", "/Retention - e-mail"]
     if current_ou in protected_ous:
         logger.warning(f"⚠️ Google: User {email} is in protected OU '{current_ou}'. Skipping move.")
         return {"ok": True, "detail": f"User in protected OU '{current_ou}', move skipped."}
-        
-    # 3. Determine Target OU
-    emp_type = user.employment_type.lower()
-    target_ou = "/empType-CON" # Default
-    
-    if "full-time" in emp_type:
-        target_ou = "/empType-FTE"
-    elif "contractor" in emp_type or "1099" in emp_type:
-        target_ou = "/empType-CON"
-    elif "temporary" in emp_type or "intern" in emp_type:
-        target_ou = "/empType-INT"
-    elif "supplier" in emp_type:
-        target_ou = "/empType-SUP"
         
     if current_ou == target_ou:
         logger.info(f"✅ Google: User {email} already in {target_ou}")
@@ -195,10 +212,6 @@ def move_user_ou(context):
         
     # 4. Move
     logger.info(f"🚚 Google: Moving {email} from '{current_ou}' to '{target_ou}'")
-    if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would move {email} to {target_ou}")
-        return {"ok": True, "detail": f"Dry run: would move user to '{target_ou}'."}
-        
     success, _, stderr = run_gam(["update", "user", email, "org", target_ou])
     if success:
         logger.info(f"✅ Google: Moved {email} to {target_ou}")
@@ -284,12 +297,23 @@ def deprovision_user(context):
     if not user: return False
     
     target_email = user.work_email
-    
-    # 🎯 TARGET FOR DATA TRANSFER
-    transfer_target = CONFIG.get("OFFBOARDING_ADMIN_EMAIL", "admin-wolverine@boom.aero")
+
+    transfer_target, transfer_reason = _resolve_offboarding_transfer_target(user, context)
+    if not transfer_target:
+        logger.error("❌ Google: %s", transfer_reason)
+        return False
     
     logger.info(f"💣 Google: Starting FULL deprovisioning for {target_email}...")
-    logger.info(f"   ℹ️  Transfer Target (Service Account Context): {transfer_target}")
+    logger.info(f"   ℹ️  Transfer Target (Manager Context): {transfer_target}")
+
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would check user existence (primary/archive) for {target_email}")
+        logger.info(f"[DRY-RUN] Would wipe mobile devices")
+        logger.info(f"[DRY-RUN] Would remove from all groups")
+        logger.info(f"[DRY-RUN] Would transfer Drive & Calendar to {transfer_target}")
+        logger.info(f"[DRY-RUN] Would rename to {target_email.replace('@', '-archive@')}")
+        logger.info(f"[DRY-RUN] Would move to /Deprovisioning and suspend")
+        return True
 
     # 1. Check if user exists (Primary or Archive)
     # We check the primary email first
@@ -313,14 +337,6 @@ def deprovision_user(context):
         else:
             logger.warning(f"⚠️ Google: User {target_email} (and archive) not found. Already deleted?")
             return True
-
-    if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would Wipe devices")
-        logger.info(f"[DRY-RUN] Would Remove from all groups")
-        logger.info(f"[DRY-RUN] Would Transfer Drive & Calendar to {transfer_target}")
-        logger.info(f"[DRY-RUN] Would Rename to {target_email.replace('@', '-archive@')}")
-        logger.info(f"[DRY-RUN] Would Move to /Deprovisioning and Suspend")
-        return True
 
     # --- STEP 1: WIPE DEVICES ---
     # Removes corporate data from sync'd mobile devices
@@ -398,6 +414,36 @@ def deprovision_user(context):
 
     logger.info(f"✅ Google Deprovisioning Complete for {target_email} (Now {archive_email})")
     return True
+
+
+def _resolve_offboarding_transfer_target(user, context):
+    """
+    Determine transfer recipient for offboarding artifacts.
+    Policy:
+    1) Prefer resolved manager email from profile/context.
+    2) Optional fallback to OFFBOARDING_ADMIN_EMAIL only if explicitly enabled.
+    """
+    manager_candidates = [
+        getattr(user, "manager_email", None),
+        (context or {}).get("manager_email"),
+    ]
+    for candidate in manager_candidates:
+        normalized = str(candidate or "").strip().lower()
+        if _is_corporate_email(normalized):
+            if normalized == str(user.work_email or "").strip().lower():
+                continue
+            return normalized, "manager email resolved"
+
+    fallback_enabled = _as_bool(CONFIG.get("OFFBOARDING_TRANSFER_FALLBACK_TO_ADMIN"), default=False)
+    fallback_admin = str(CONFIG.get("OFFBOARDING_ADMIN_EMAIL") or "").strip().lower()
+    if fallback_enabled and _is_corporate_email(fallback_admin):
+        return fallback_admin, "fallback admin enabled"
+
+    return None, (
+        "Manager email missing/unresolvable for offboarding transfer target. "
+        "Populate manager in source systems or set SERVUS_OFFBOARDING_TRANSFER_FALLBACK_TO_ADMIN=true "
+        "for temporary admin fallback."
+    )
 
 def process_rehire(context):
     """

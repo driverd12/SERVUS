@@ -23,7 +23,8 @@ class _Step:
 
 
 class _Workflow:
-    def __init__(self, steps):
+    def __init__(self, steps, name="workflow"):
+        self.name = name
         self.steps = steps
 
 
@@ -183,6 +184,100 @@ class SchedulerHardeningTests(unittest.TestCase):
 
         combined = " ".join(result["blocking"])
         self.assertIn("AD_PASS missing", combined)
+
+    @patch.object(
+        scheduler,
+        "_workflow_paths_for_preflight",
+        return_value=["offboard.yaml"],
+    )
+    @patch.object(
+        scheduler,
+        "load_workflow",
+        return_value=_Workflow(
+            [_Step("okta_kill", "okta.deactivate_user")],
+            name="SERVUS Supplier Offboarding",
+        ),
+    )
+    @patch.object(scheduler.os.path, "exists", return_value=True)
+    @patch.object(
+        scheduler,
+        "protected_policy_summary",
+        return_value={"path": "servus/data/protected_targets.yaml", "total_rules": 1},
+    )
+    def test_preflight_requires_offboarding_policy_gate(
+        self,
+        _policy_summary_mock,
+        _exists_mock,
+        _load_workflow_mock,
+        _workflow_paths_mock,
+    ):
+        with patch.dict(
+            scheduler.CONFIG,
+            {
+                "OKTA_DOMAIN": "boom.okta.com",
+                "OKTA_TOKEN": "token",
+                "AD_HOST": "dc.boom.local",
+                "AD_USER": "svc-account",
+                "AD_PASS": "redacted",
+                "SLACK_TOKEN": "xoxb-test",
+                "RIPPLING_API_TOKEN": "rpkey",
+                "FRESHSERVICE_DOMAIN": "boom.freshservice.com",
+                "FRESHSERVICE_API_KEY": "fskey",
+                "GAM_PATH": "/usr/local/bin/gam",
+            },
+            clear=True,
+        ):
+            result = scheduler.run_startup_preflight()
+
+        combined = " ".join(result["blocking"])
+        self.assertIn("builtin.validate_target_email", combined)
+
+    @patch.object(
+        scheduler,
+        "_workflow_paths_for_preflight",
+        return_value=["offboard.yaml"],
+    )
+    @patch.object(
+        scheduler,
+        "load_workflow",
+        return_value=_Workflow(
+            [_Step("policy_gate", "builtin.validate_target_email")],
+            name="SERVUS Supplier Offboarding",
+        ),
+    )
+    @patch.object(scheduler.os.path, "exists", return_value=True)
+    @patch.object(
+        scheduler,
+        "protected_policy_summary",
+        return_value={"path": "servus/data/protected_targets.yaml", "total_rules": 1},
+    )
+    def test_preflight_requires_offboarding_manager_gate(
+        self,
+        _policy_summary_mock,
+        _exists_mock,
+        _load_workflow_mock,
+        _workflow_paths_mock,
+    ):
+        with patch.dict(
+            scheduler.CONFIG,
+            {
+                "OKTA_DOMAIN": "boom.okta.com",
+                "OKTA_TOKEN": "token",
+                "AD_HOST": "dc.boom.local",
+                "AD_USER": "svc-account",
+                "AD_PASS": "redacted",
+                "SLACK_TOKEN": "xoxb-test",
+                "RIPPLING_API_TOKEN": "rpkey",
+                "FRESHSERVICE_DOMAIN": "boom.freshservice.com",
+                "FRESHSERVICE_API_KEY": "fskey",
+                "GAM_PATH": "/usr/local/bin/gam",
+            },
+            clear=True,
+        ):
+            result = scheduler.run_startup_preflight()
+
+        combined = " ".join(result["blocking"])
+        self.assertIn("okta.verify_manager_resolved", combined)
 
 
 if __name__ == "__main__":

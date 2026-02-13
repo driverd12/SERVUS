@@ -1,6 +1,16 @@
 name: "SERVUS Supplier Offboarding"
 description: "Disable AD -> Deactivate Okta -> Wipe Google -> Kill Badge"
 steps:
+  - id: policy_gate
+    description: "Policy: Block protected targets before destructive actions"
+    type: action
+    action: builtin.validate_target_email
+
+  - id: manager_gate
+    description: "Okta: Resolve manager email for transfer routing"
+    type: action
+    action: okta.verify_manager_resolved
+
   - id: okta_kill
     description: "Okta: Deactivate account (Unassigns Slack App -> Kills Slack)"
     type: action
@@ -20,4 +30,3 @@ steps:
     description: "Google: Suspend, Wipe Device, Move OU"
     type: action
     action: google_gam.deprovision_user
-

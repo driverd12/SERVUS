@@ -37,6 +37,17 @@ The opposite of [[Offboarding]]!
 - If onboarding fails, the row is marked `ERROR` with `last_error` to prevent retry loops.
 - If the user/start-date combination was already successfully onboarded, the row is automatically removed as already satisfied.
 
+### Headless dual-validation lifecycle
+
+- Scheduler now validates both lifecycle directions every cycle:
+  - onboarding: Rippling new-hire signal + Freshservice onboarding ticket.
+  - offboarding: Rippling departure signal + Freshservice offboarding ticket.
+- Offboarding staging queue default: `servus_state/pending_offboards.csv` (override with `SERVUS_OFFBOARDING_PENDING_CSV`).
+- Offboarding runs are safety-staged by default:
+  - `SERVUS_OFFBOARDING_EXECUTION_ENABLED=false` -> validated departures are written to pending CSV only.
+  - `SERVUS_OFFBOARDING_EXECUTION_ENABLED=true` -> scheduler executes offboarding workflow after staging.
+- Offboarding dedupe is persisted in scheduler state to prevent duplicate destructive runs on retries/restarts.
+
 ### Slack notification mode
 
 - Default mode is `summary`: one start notification and one consolidated run summary notification.
@@ -145,6 +156,42 @@ Important:
 - If `start_date` is in the future and urgent mode is not enabled, the row remains `READY` and is retried each cycle until eligible.
 - If Rippling lookup cannot supply `start_date`, pass `--start-date` explicitly (kept required for dedupe safety).
 - Start unattended scheduler with `python3 scripts/scheduler.py`.
+
+### Offboarding CLI safety
+
+- `python3 -m servus offboard ...` now defaults to dry-run safety mode.
+- Live offboarding requires explicit acknowledgment flag:
+
+```bash
+python3 -m servus offboard \
+  --workflow servus/workflows/offboard_us.yaml \
+  --profile examples/user_profile.json \
+  --execute-live
+```
+
+- Offboarding now enforces protected-target policy in two layers:
+  - Workflow gate step `builtin.validate_target_email` runs before any destructive action.
+  - Destructive action wrappers (`okta.deactivate_user`, `ad.verify_user_disabled`, `slack.deactivate_user`, `google_gam.deprovision_user`) re-check policy as defense in depth.
+- Offboarding now verifies manager routing before destructive execution:
+  - Workflow step `okta.verify_manager_resolved` ensures manager email is present.
+  - Google offboarding transfers Drive, Calendar, and alias-based mail routing to the resolved manager email.
+- Configure protected targets in `servus/data/protected_targets.yaml` or override with:
+  - `SERVUS_PROTECTED_TARGETS_FILE`
+  - `SERVUS_PROTECTED_EMAILS`
+  - `SERVUS_PROTECTED_USERNAMES`
+  - `SERVUS_PROTECTED_DOMAINS`
+  - `SERVUS_PROTECTED_DEPARTMENTS`
+  - `SERVUS_PROTECTED_TITLES`
+- AD destructive actions also hard-block accounts under protected OU patterns (default includes `OU=Service Accounts,OU=Boom Users`):
+  - `SERVUS_PROTECTED_AD_OU_PATTERNS` (semicolon-delimited patterns)
+- `OFFBOARDING_ADMIN_EMAIL` is always treated as protected automatically.
+- Automated offboarding execution modes:
+  - `SERVUS_OFFBOARDING_EXECUTION_MODE=staged` (default): stage pending rows only.
+  - `SERVUS_OFFBOARDING_EXECUTION_MODE=auto`: execute live only when startup preflight has no blocking issues and protected-target policy is non-empty.
+  - `SERVUS_OFFBOARDING_EXECUTION_MODE=live`: force live execution.
+- Optional fallback behavior:
+  - `SERVUS_OFFBOARDING_TRANSFER_FALLBACK_TO_ADMIN=true` allows admin fallback transfer target if manager cannot be resolved.
+  - Keep fallback disabled for strict manager-only routing.
 
 ### Headless service packaging
 

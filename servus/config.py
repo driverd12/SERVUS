@@ -140,6 +140,17 @@ CONFIG = {
     
     # Offboarding
     "OFFBOARDING_ADMIN_EMAIL": env_config.get("SERVUS_OFFBOARDING_ADMIN", "admin-wolverine@boom.aero"),
+    "PROTECTED_TARGETS_FILE": env_config.get(
+        "SERVUS_PROTECTED_TARGETS_FILE", "servus/data/protected_targets.yaml"
+    ),
+    "PROTECTED_EMAILS": env_config.get("SERVUS_PROTECTED_EMAILS", ""),
+    "PROTECTED_USERNAMES": env_config.get("SERVUS_PROTECTED_USERNAMES", ""),
+    "PROTECTED_DOMAINS": env_config.get("SERVUS_PROTECTED_DOMAINS", ""),
+    "PROTECTED_DEPARTMENTS": env_config.get("SERVUS_PROTECTED_DEPARTMENTS", ""),
+    "PROTECTED_TITLES": env_config.get("SERVUS_PROTECTED_TITLES", ""),
+    "PROTECTED_AD_OU_PATTERNS": env_config.get(
+        "SERVUS_PROTECTED_AD_OU_PATTERNS", "OU=Service Accounts,OU=Boom Users"
+    ),
 
     # Notifications
     "SLACK_WEBHOOK_URL": env_config.get("SERVUS_SLACK_WEBHOOK_URL"),
@@ -158,6 +169,18 @@ CONFIG = {
     ),
     "SCHEDULER_STATE_FILE": env_config.get(
         "SERVUS_SCHEDULER_STATE_FILE", "servus_state/scheduler_state.json"
+    ),
+    "OFFBOARDING_PENDING_CSV": env_config.get(
+        "SERVUS_OFFBOARDING_PENDING_CSV", "servus_state/pending_offboards.csv"
+    ),
+    "OFFBOARDING_EXECUTION_MODE": env_config.get("SERVUS_OFFBOARDING_EXECUTION_MODE", "").strip().lower(),
+    "OFFBOARDING_EXECUTION_ENABLED": _as_bool(
+        env_config.get("SERVUS_OFFBOARDING_EXECUTION_ENABLED"),
+        default=False,
+    ),
+    "OFFBOARDING_TRANSFER_FALLBACK_TO_ADMIN": _as_bool(
+        env_config.get("SERVUS_OFFBOARDING_TRANSFER_FALLBACK_TO_ADMIN"),
+        default=False,
     ),
     "MANUAL_OVERRIDE_ENFORCE_START_DATE": _as_bool(
         env_config.get("SERVUS_MANUAL_OVERRIDE_ENFORCE_START_DATE"),

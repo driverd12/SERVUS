@@ -117,6 +117,10 @@ def add_to_channels(context):
     if not target_channels:
         return {"ok": True, "detail": "No Slack channels matched policy; skipped."}
 
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would add {user.work_email} to channels: {target_channels}")
+        return {"ok": True, "detail": f"Dry run: would add to channels {target_channels}."}
+
     if not CONFIG.get("SLACK_TOKEN"):
         logger.warning("⚠️ Slack token missing. Skipping Slack channel assignment.")
         return {"ok": True, "detail": "SLACK_TOKEN missing; skipped Slack channel assignment."}
@@ -136,11 +140,6 @@ def add_to_channels(context):
             logger.info(f"✅ Slack: User found ({user_id})")
             break
         
-        if context.get("dry_run"):
-             logger.info(f"[DRY-RUN] Would wait for Slack user {email}")
-             user_id = "U_DRY_RUN"
-             break
-             
         time.sleep(30)
         
     if not user_id:
@@ -153,10 +152,6 @@ def add_to_channels(context):
         }
 
     logger.info(f"Adding {user.work_email} to {len(target_channels)} Slack channels...")
-
-    if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would add to: {target_channels}")
-        return {"ok": True, "detail": f"Dry run: would add to channels {target_channels}."}
 
     # 4. Invite User
     url = "https://slack.com/api/conversations.invite"
@@ -202,6 +197,10 @@ def deactivate_user(context):
 
     logger.info(f"🚫 Slack: Deactivating {email}...")
 
+    if context.get("dry_run"):
+        logger.info(f"[DRY-RUN] Would deactivate Slack user matching {email}")
+        return True
+
     # 1. Find User ID
     user_id = _lookup_user_by_email(email)
     
@@ -233,10 +232,6 @@ def deactivate_user(context):
             return True
     except Exception:
         pass 
-
-    if context.get("dry_run"):
-        logger.info(f"[DRY-RUN] Would deactivate Slack user {user_id}")
-        return True
 
     # 2. Deactivate via SCIM API (DELETE /Users/{id})
     # Note: This requires an Admin token with SCIM scopes or a Grid Admin token.

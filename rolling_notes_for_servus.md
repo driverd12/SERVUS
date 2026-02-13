@@ -185,3 +185,15 @@
 - **CONSEQUENCES:** Preflight now aligns with modern Slack scope naming and accurately reflects channel invite capability.
 - **ROLLBACK:** Revert `scripts/preflight_check.py` and `tests_python/test_preflight_check.py` to prior scope matcher behavior.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_preflight_check.py
+
+- **DECISION:** Add a one-command off-cycle onboarding wrapper (`scripts/offcycle_onboard.sh`) that submits manual override requests with minimal required inputs.
+- **CONTEXT:** Operators needed a faster workflow than invoking `live_onboard_test.py` with many flags for urgent/missed onboardings.
+- **CONSEQUENCES:** Off-cycle onboarding can now be queued with email + immutable Rippling/Freshservice IDs in a single command; default behavior is immediate queueing (`READY` + `urgent`) with optional `--hold` for staged approval.
+- **ROLLBACK:** Remove `scripts/offcycle_onboard.sh` and revert related doc/inspection updates.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/offcycle_onboard.sh, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md
+
+- **DECISION:** Package scheduler auto-restart deployment as committed service templates and installer/render scripts for both macOS (`launchd`) and Linux (`systemd`).
+- **CONTEXT:** Team requires set-and-forget headless operation now on macOS and later migration to a dedicated host without re-authoring service definitions.
+- **CONSEQUENCES:** `scripts/install_scheduler_launchd.sh` installs/loads a strict-preflight launchd service from template; `scripts/render_scheduler_systemd.sh` renders a portable systemd unit for dedicated hosts.
+- **ROLLBACK:** Remove service template files and helper scripts, then return to manual scheduler startup.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/install_scheduler_launchd.sh, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/render_scheduler_systemd.sh, /Users/dan.driver/Cursor_projects/python/SERVUS/ops/launchd/com.boom.servus.scheduler.plist.template, /Users/dan.driver/Cursor_projects/python/SERVUS/ops/systemd/servus-scheduler.service.template

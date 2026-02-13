@@ -76,6 +76,21 @@ The opposite of [[Offboarding]]!
 Use `scripts/live_onboard_test.py` to enqueue a request instead of executing onboarding directly.
 The helper defaults to `HOLD` for safety.
 
+For the simplest off-cycle operator flow, use the wrapper:
+
+```bash
+scripts/offcycle_onboard.sh \
+  --work-email "<work-email>" \
+  --rippling-worker-id "<rippling-worker-id>" \
+  --freshservice-ticket-id "<freshservice-ticket-id-or-INC-###>" \
+  --reason "Off-cycle onboarding"
+```
+
+Wrapper behavior:
+- Default mode is immediate (`READY` + `urgent`).
+- Use `--hold` to stage the request without immediate execution.
+- Optional: add `--start-date YYYY-MM-DD` if enrichment cannot infer start date.
+
 Dry-run validation:
 
 ```bash
@@ -130,6 +145,18 @@ Important:
 - If `start_date` is in the future and urgent mode is not enabled, the row remains `READY` and is retried each cycle until eligible.
 - If Rippling lookup cannot supply `start_date`, pass `--start-date` explicitly (kept required for dedupe safety).
 - Start unattended scheduler with `python3 scripts/scheduler.py`.
+
+### Headless service packaging
+
+Use committed service helpers instead of manual copy/paste:
+
+```bash
+# macOS launchd (installs + loads per-user auto-restart service)
+scripts/install_scheduler_launchd.sh
+
+# Linux systemd (renders unit file for dedicated SERVUS host)
+scripts/render_scheduler_systemd.sh --run-user servus --output ./servus-scheduler.service
+```
 ## Manual Onboarding Best Practices
 - Always copy-and-paste usernames and names.  If you type usernames or names anywhere, you will eventually make a typo.  Typos in usernames are time consuming to correct.  If there is a Typo in a name, best that it comes from upstream-- not from you.
 ## Create a checklist document

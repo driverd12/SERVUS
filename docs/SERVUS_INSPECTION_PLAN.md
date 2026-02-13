@@ -30,11 +30,15 @@ Run these checks when validating urgent/manual onboarding support:
 - Start scheduler once and confirm startup preflight reports any blocking action wiring/config issues before first scan.
 - Run `python3 scripts/preflight_check.py --strict` and confirm Slack scope validation catches missing `users:read.email` or invite-write scopes before live runs.
 - Validate queue submission helper with `python3 scripts/live_onboard_test.py --dry-run ...`.
+- Validate simplified wrapper with `scripts/offcycle_onboard.sh --help` and one non-production queue submission.
 - Confirm helper writes `HOLD` by default and only executes after explicit `READY` approval.
 - Validate minimal enqueue path (`--work-email` + `--start-date`) and verify Rippling/Okta enrichment fills remaining profile fields.
 - Confirm Google policy defaults are correct for employment types (`team@boom.aero` for FTE, `contractors@boom.aero` for non-FTE, plus intern/supplier add-ons).
 - Confirm Rippling token has `workers.read` and that `GET /workers?limit=1` returns `200` before relying on email-only enrichment.
 - Confirm scheduler logs the configured manual override CSV path at startup.
+- Validate service packaging scripts:
+  - `scripts/install_scheduler_launchd.sh --dry-run`
+  - `scripts/render_scheduler_systemd.sh --output ./servus-scheduler.service`
 - Confirm `servus/data/google_groups.yaml` and `servus/data/slack_channels.yaml` reflect intended production targets before enabling live onboarding.
 - Confirm `HOLD` rows are ignored and only `READY` rows are processed.
 - Add a `READY` row with future `start_date` and verify scheduler defers execution until eligible.

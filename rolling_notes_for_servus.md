@@ -227,3 +227,9 @@
 - **CONSEQUENCES:** Protected policy now supports `usernames`; baseline protected targets populated with named admin/service identities; AD disable action now aborts when target DN matches protected OU patterns (`SERVUS_PROTECTED_AD_OU_PATTERNS`, default includes `OU=Service Accounts,OU=Boom Users`).
 - **ROLLBACK:** Revert `servus/safety.py`, `servus/data/protected_targets.yaml`, `servus/integrations/ad.py`, config/env keys, and related tests/docs.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/safety.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/protected_targets.yaml, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/ad.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/config.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_ad_offboarding_safety.py
+
+- **DECISION:** Refresh top-level README and add a one-page operator runbook card for coworker handoff onboarding operations.
+- **CONTEXT:** Existing `README.md` no longer reflected current headless execution modes and safeguards, and operators needed a short copy/paste handoff card instead of a long process document.
+- **CONSEQUENCES:** `README.md` now matches current scheduler/offboarding model and links operator docs; new `docs/OPERATOR_RUNBOOK_CARD.md` provides minimal commands for shift-start preflight, scheduler startup, off-cycle queueing, approval, monitoring, and retry.
+- **ROLLBACK:** Restore previous `README.md` and remove `docs/OPERATOR_RUNBOOK_CARD.md` if a longer-form-only documentation strategy is preferred.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/README.md, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/OPERATOR_RUNBOOK_CARD.md

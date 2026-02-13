@@ -7,69 +7,70 @@
  \___ \ |  __|  |  _  /   \ \/ /   | |  | | \___ \
  ____) || |____ | | \ \    \  /    | |__| | ____) |
 |_____/ |______||_|  \_\    \/      \____/ |_____/
-
 ```
 
 **SERVUS: Provision in. Deprovision out. No loose ends.**
 
-SERVUS is a workflow-driven identity orchestration tool designed to augment Okta SCIM. It handles the "last mile" of customization for Active Directory, Google Workspace, Slack, and Physical Access (Brivo).
+SERVUS is a 24/7 onboarding + offboarding orchestration system with deterministic workflows, two-source trigger validation, idempotent retries, and safety-first destructive controls.
 
-## 🏗️ Architecture (Phase 2: Okta Mastered)
+## What It Does
 
-*   **Master of Record:** Rippling (HRIS) -> Okta.
-*   **Provisioning:** Okta SCIM handles account creation for AD, Google, and Slack.
-*   **SERVUS Role:**
-    *   **Validation:** Verifies AD attributes and Group memberships match HRIS data.
-    *   **Customization:** Moves Google OUs, adds Google Groups, and manages Slack Channels based on Employee Type (FTE vs Contractor).
-    *   **Physical Access:** Queues badge print jobs to a local Windows agent via AWS SQS.
+- Onboarding: validates and customizes downstream systems after SCIM baseline creation.
+- Offboarding: deactivates and deprovisions accounts, transfers Google data/calendar/mail routing, and enforces protected-target blocks.
+- Manual off-cycle onboarding: supports urgent queue submission with minimal CLI input.
 
-## 🚀 Quick Start
+## Safety Model
 
-### 1. Setup
+- Dual-validation required for headless onboarding/offboarding triggers (Rippling + Freshservice).
+- Offboarding protected-target policy is mandatory and checked in two layers:
+  - Workflow policy gate: `builtin.validate_target_email`
+  - Per-action wrappers on destructive actions
+- AD destructive operations are blocked for protected OU patterns (default includes Service Accounts OU).
+- Scheduler offboarding execution mode:
+  - `staged` (default): stage only, no destructive execution
+  - `auto`: execute live only when preflight is clean and protected policy is non-empty
+  - `live`: force live execution
+
+## Quick Start
+
 ```bash
-python -m venv .venv && source .venv/bin/activate  # Mac/Linux
-# .venv\Scripts\activate  # Windows
+cd /Users/dan.driver/Cursor_projects/python/SERVUS
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your secrets (Slack Webhook, Okta Token, AD Creds, etc.)
 ```
 
-### 2. Run the Scheduler (The "Listener")
-The scheduler runs 24/7, polling Rippling and Freshservice for new hires.
+Run preflight:
+
 ```bash
-python scripts/scheduler.py
+python3 scripts/preflight_check.py --strict
 ```
-*   **New Hires:** Automatically triggers the Onboarding Workflow.
-*   **Departures:** Logs to `pending_offboards.csv` (Safety Mode).
 
-### 3. Manual / Dry Run
-Test the logic without making changes:
+Run scheduler (headless listener):
+
 ```bash
-# Test specific new hires
-python scripts/dry_run_new_hires.py
-
-# Run CLI manually
-python -m servus onboard --profile examples/user_profile.json --dry-run
+python3 scripts/scheduler.py
 ```
 
-## 🛠️ Components
+## Off-Cycle Onboarding (Minimal Command)
 
-### Workflows (`servus/workflows/`)
-*   `onboard_us.yaml`: The primary sequence (Validate AD -> Wait for Google -> Customize -> Slack -> Badge).
-*   `offboard_us.yaml`: The surgical deprovisioning sequence.
+```bash
+scripts/offcycle_onboard.sh \
+  --work-email "<user@boom.aero>" \
+  --rippling-worker-id "<rippling-worker-id>" \
+  --freshservice-ticket-id "<ticket-id-or-INC-###>" \
+  --reason "Off-cycle onboarding"
+```
 
-### Badge Printing (`scripts/windows_badge_agent.py`)
-Runs on a Windows laptop connected to the ID card printer.
-*   Listens to AWS SQS queue.
-*   Downloads user photo and metadata.
-*   Generates badge image (Front/Back) and prints immediately.
+## Recommended Docs
 
-### Integrations (`servus/integrations/`)
-*   `ad.py`: Passive validation via WinRM.
-*   `google_gam.py`: GAM wrapper for OU/Group management.
-*   `slack.py`: Channel management via API.
-*   `rippling.py`: HRIS data fetching.
+- Operator handoff runbook card: `docs/OPERATOR_RUNBOOK_CARD.md`
+- Full operational guide: `docs/Onboarding.md`
+- Inspection/test plan: `docs/SERVUS_INSPECTION_PLAN.md`
+- Security notes: `docs/SECURITY.md`
 
-## 📝 Documentation
-*   `docs/SERVUS_INSPECTION_PLAN.md`: Full verification checklist.
-*   `docs/Onboarding.md`: Process best practices.
+## Service Packaging
+
+- macOS `launchd` installer: `scripts/install_scheduler_launchd.sh`
+- Linux `systemd` renderer: `scripts/render_scheduler_systemd.sh`

@@ -28,15 +28,17 @@ Run these checks when validating local IDE continuity infrastructure:
 Run these checks when validating urgent/manual onboarding support:
 
 - Start scheduler once and confirm startup preflight reports any blocking action wiring/config issues before first scan.
+- Run `python3 scripts/preflight_check.py --strict` and confirm Slack scope validation catches missing `users:read.email` or invite-write scopes before live runs.
 - Validate queue submission helper with `python3 scripts/live_onboard_test.py --dry-run ...`.
 - Confirm helper writes `HOLD` by default and only executes after explicit `READY` approval.
 - Validate minimal enqueue path (`--work-email` + `--start-date`) and verify Rippling/Okta enrichment fills remaining profile fields.
 - Confirm Rippling token has `workers.read` and that `GET /workers?limit=1` returns `200` before relying on email-only enrichment.
 - Confirm scheduler logs the configured manual override CSV path at startup.
+- Confirm `servus/data/google_groups.yaml` and `servus/data/slack_channels.yaml` reflect intended production targets before enabling live onboarding.
 - Confirm `HOLD` rows are ignored and only `READY` rows are processed.
 - Add a `READY` row with future `start_date` and verify scheduler defers execution until eligible.
 - Add the same row with `allow_before_start_date=true` and verify it executes immediately.
-- Validate Brivo fallback: when SQS is unavailable, verify workflow posts a manual Slack instruction and continues without hard-failing on badge step.
+- Validate Brivo fallback: when SQS is unavailable and `SERVUS_BRIVO_QUEUE_REQUIRED=false`, verify workflow posts a manual Slack instruction and continues without hard-failing on badge step.
 - Add a valid `READY` row to the override CSV and verify one onboarding run occurs.
 - Confirm the completed row is removed from the CSV after successful onboarding.
 - Add an invalid `READY` row (for example identical confirmation sources) and verify it is marked `ERROR`.

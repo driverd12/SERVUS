@@ -1,0 +1,21 @@
+global:
+  full_time:
+    - b-staff@boom.aero
+  contractor: []
+  intern: []
+  supplier: []
+
+departments:
+  engineering:
+    - engineering@boom.aero
+  finance:
+    - finance@boom.aero
+  it:
+    - it@boom.aero
+  legal:
+    - legal@boom.aero
+  marketing:
+    - marketing@boom.aero
+  people:
+    - peopleops@boom.aero
+  sales: []

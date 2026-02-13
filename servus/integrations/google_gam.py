@@ -1,11 +1,24 @@
 import subprocess
 import logging
 import time
+import os
+import yaml
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.google")
 
 GAM_PATH = CONFIG.get("GAM_PATH", "gam")
+GROUP_POLICY_FILE = os.path.join("servus", "data", "google_groups.yaml")
+
+DEFAULT_GROUP_POLICY = {
+    "global": {
+        "full_time": [],
+        "contractor": [],
+        "intern": [],
+        "supplier": [],
+    },
+    "departments": {},
+}
 
 def run_gam(args):
     cmd = [GAM_PATH] + args
@@ -17,6 +30,88 @@ def run_gam(args):
     except FileNotFoundError:
         logger.error(f"GAM binary not found at {GAM_PATH}")
         return False, "", "Binary missing"
+
+
+def _load_group_policy():
+    if not os.path.exists(GROUP_POLICY_FILE):
+        logger.warning("Google group policy file missing: %s", GROUP_POLICY_FILE)
+        return DEFAULT_GROUP_POLICY
+
+    try:
+        with open(GROUP_POLICY_FILE, "r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle) or {}
+    except Exception as exc:
+        logger.error("Failed to load Google group policy (%s): %s", GROUP_POLICY_FILE, exc)
+        return DEFAULT_GROUP_POLICY
+
+    global_policy = data.get("global")
+    dept_policy = data.get("departments")
+    if not isinstance(global_policy, dict):
+        global_policy = {}
+    if not isinstance(dept_policy, dict):
+        dept_policy = {}
+
+    normalized_global = {
+        "full_time": _normalize_group_list(global_policy.get("full_time")),
+        "contractor": _normalize_group_list(global_policy.get("contractor")),
+        "intern": _normalize_group_list(global_policy.get("intern")),
+        "supplier": _normalize_group_list(global_policy.get("supplier")),
+    }
+    normalized_dept = {}
+    for dept_key, group_values in dept_policy.items():
+        key = str(dept_key or "").strip().lower()
+        if not key:
+            continue
+        normalized_dept[key] = _normalize_group_list(group_values)
+
+    return {"global": normalized_global, "departments": normalized_dept}
+
+
+def _normalize_group_list(raw_values):
+    if isinstance(raw_values, str):
+        raw_values = [raw_values]
+    if not isinstance(raw_values, list):
+        return []
+
+    groups = []
+    for value in raw_values:
+        group = str(value or "").strip()
+        if group:
+            groups.append(group)
+    return groups
+
+
+def _employment_bucket(employment_type):
+    emp_type = str(employment_type or "").strip().lower()
+    if "supplier" in emp_type:
+        return "supplier"
+    if any(token in emp_type for token in ("intern", "temporary")):
+        return "intern"
+    if any(token in emp_type for token in ("contractor", "1099")):
+        return "contractor"
+    if "full-time" in emp_type:
+        return "full_time"
+    return "contractor"
+
+
+def _groups_for_user(user, policy):
+    global_policy = policy.get("global", {})
+    dept_policy = policy.get("departments", {})
+
+    groups = []
+    groups.extend(global_policy.get(_employment_bucket(user.employment_type), []))
+    dept_key = str(user.department or "").strip().lower()
+    groups.extend(dept_policy.get(dept_key, []))
+
+    deduped = []
+    seen = set()
+    for group in groups:
+        key = str(group).strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(str(group).strip())
+    return deduped
 
 def wait_for_user_scim(context):
     """
@@ -123,19 +218,8 @@ def add_groups(context):
     
     logger.info(f"👥 Google: Adding groups for {email}...")
     
-    groups_to_add = []
-    
-    # 1. All Hands (FTEs)
-    emp_type = user.employment_type.lower()
-    if "full-time" in emp_type:
-        groups_to_add.append("all-hands@boom.aero")
-        
-    # 2. Department Groups
-    dept = user.department.lower() if user.department else ""
-    if "engineering" in dept:
-        groups_to_add.append("engineering-all@boom.aero")
-        
-    # Add more department logic here as needed
+    group_policy = _load_group_policy()
+    groups_to_add = _groups_for_user(user, group_policy)
     
     if not groups_to_add:
         logger.info("   No groups matched criteria.")
@@ -164,7 +248,12 @@ def add_groups(context):
                  logger.info(f"   ℹ️ Already a member of {group_email}")
                  success_count += 1
                  already_member_count += 1
-            elif "Group not found" in stdout or "Group not found" in stderr:
+            elif (
+                "Group not found" in stdout
+                or "Group not found" in stderr
+                or "Does not exist" in stdout
+                or "Does not exist" in stderr
+            ):
                  logger.error(f"   ❌ Group {group_email} not found!")
                  failed_groups.append(f"{group_email}:group-not-found")
             else:

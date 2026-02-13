@@ -43,6 +43,11 @@ The opposite of [[Offboarding]]!
 - Use `SERVUS_SLACK_NOTIFICATION_MODE=verbose` for step-by-step notifications.
 - Use `SERVUS_SLACK_NOTIFICATION_MODE=final_only` to suppress start notifications and send final summary only.
 
+### Integration preflight command
+
+- Run `python3 scripts/preflight_check.py` before production onboarding windows to validate critical integrations.
+- Use `python3 scripts/preflight_check.py --strict` in CI/NOC gates to fail fast on missing scopes, missing groups, or unreachable badge queue endpoints.
+
 ### Brivo/badge fallback behavior
 
 - If SQS badge queue is unavailable or push fails, the onboarding run no longer hard-fails on badge step alone.
@@ -50,6 +55,13 @@ The opposite of [[Offboarding]]!
   - "Create Brivo account and print badge manually"
   - user details (name/email/title/manager)
   - profile image URL (best effort from Rippling/Okta)
+- `SERVUS_BRIVO_QUEUE_REQUIRED=true` promotes badge queue health to a strict preflight failure.
+
+### Provisioning policy files
+
+- Google group assignment policy is data-driven in `servus/data/google_groups.yaml`.
+- Slack channel assignment policy is data-driven in `servus/data/slack_channels.yaml`.
+- If the policy file has no matching targets for a user, the step is skipped with an explicit success detail (`...matched policy; skipped`).
 
 ### Queue submission helper (headless-safe)
 

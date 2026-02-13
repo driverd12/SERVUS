@@ -128,6 +128,10 @@ CONFIG = {
     "BRIVO_API_KEY": env_config.get("SERVUS_BRIVO_API_KEY"),
     "BRIVO_USERNAME": env_config.get("SERVUS_BRIVO_USERNAME"),
     "BRIVO_PASSWORD": env_config.get("SERVUS_BRIVO_PASSWORD"),
+    "BRIVO_QUEUE_REQUIRED": _as_bool(
+        env_config.get("SERVUS_BRIVO_QUEUE_REQUIRED"),
+        default=False,
+    ),
 
     # AWS SQS (Badge Printing)
     "SQS_BADGE_QUEUE_URL": env_config.get("SERVUS_SQS_BADGE_QUEUE_URL"),

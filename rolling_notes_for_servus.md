@@ -155,3 +155,21 @@
 - **CONSEQUENCES:** New CLI tool provides a concise status table; supports `--strict` mode for CI/CD or hard-gated checks; reduces runtime surprises.
 - **ROLLBACK:** Remove `scripts/preflight_check.py`, `tests_python/test_preflight_check.py`, and revert `rolling_notes_for_servus.md`.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_preflight_check.py
+
+- **DECISION:** Harden the preflight tool to run from any invocation path and enforce checks that match real onboarding failure modes (Slack scopes + badge queue endpoint reachability).
+- **CONTEXT:** Initial `scripts/preflight_check.py` could fail at import time (`ModuleNotFoundError: servus`) and only validated Slack auth / SQS URL shape, missing the exact runtime blockers seen in production (`missing_scope`, unreachable queue endpoint).
+- **CONSEQUENCES:** Operators can now execute preflight reliably via `python3 scripts/preflight_check.py`; Slack preflight explicitly validates `users:read.email` and invite-write scopes; Brivo preflight now verifies endpoint reachability in addition to configuration format.
+- **ROLLBACK:** Revert `scripts/preflight_check.py`, `tests_python/test_preflight_check.py`, and associated doc updates if a lighter preflight policy is preferred.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md
+
+- **DECISION:** Replace hardcoded Google/Slack onboarding targets with policy files so production runs track real org resources without code edits.
+- **CONTEXT:** Hardcoded targets (`all-hands@boom.aero`, `engineering-all@boom.aero`, and Slack `all-hands`) produced deterministic onboarding failures when those resources were missing or not configured for API automation.
+- **CONSEQUENCES:** Google group adds now resolve from `servus/data/google_groups.yaml`; Slack channel adds now resolve from `servus/data/slack_channels.yaml`; if no targets match policy, steps succeed with explicit skip detail.
+- **ROLLBACK:** Revert `servus/integrations/google_gam.py`, `servus/integrations/slack.py`, and remove `servus/data/google_groups.yaml` to restore hardcoded target behavior.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/google_gam.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/integrations/slack.py, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/google_groups.yaml
+
+- **DECISION:** Make Brivo preflight strictness configurable (`SERVUS_BRIVO_QUEUE_REQUIRED`) to align with manual badge fallback operations.
+- **CONTEXT:** Badge queue is intentionally optional during some onboarding windows, but strict preflight previously failed even when workflow fallback was designed and tested.
+- **CONSEQUENCES:** With default `SERVUS_BRIVO_QUEUE_REQUIRED=false`, unreachable/missing queue emits warning (not blocker); strict queue enforcement remains available by setting the flag true.
+- **ROLLBACK:** Remove `BRIVO_QUEUE_REQUIRED` config handling and revert preflight logic to always fail on queue reachability/config issues.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/config.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/.env.example

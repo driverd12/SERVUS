@@ -9,7 +9,7 @@ logs/
 servus_state/
 .DS_Store
 dist/
-data/
+/data/
 docs/supplier_offboardings_SERVUS.csv
 servus_scheduler.log
 servus_scheduler.log.*

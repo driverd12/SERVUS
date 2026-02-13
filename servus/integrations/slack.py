@@ -6,6 +6,7 @@ import time
 from servus.config import CONFIG
 
 logger = logging.getLogger("servus.slack")
+CHANNELS_FILE = os.path.join("servus", "data", "slack_channels.yaml")
 
 def _get_headers():
     token = CONFIG.get("SLACK_TOKEN")
@@ -29,6 +30,80 @@ def _lookup_user_by_email(email):
         logger.error(f"Slack Connection Error: {e}")
         return None
 
+
+def _normalize_list(raw_values):
+    if isinstance(raw_values, str):
+        raw_values = [raw_values]
+    if not isinstance(raw_values, list):
+        return []
+
+    values = []
+    for value in raw_values:
+        normalized = str(value or "").strip()
+        if normalized:
+            values.append(normalized)
+    return values
+
+
+def _load_channel_policy():
+    if not os.path.exists(CHANNELS_FILE):
+        logger.warning("Missing data file: %s. Slack channel assignment skipped.", CHANNELS_FILE)
+        return {"global": [], "departments": {}, "employment_type": {}}
+
+    with open(CHANNELS_FILE, "r", encoding="utf-8") as handle:
+        config = yaml.safe_load(handle) or {}
+
+    global_channels = _normalize_list(config.get("global"))
+    dept_channels = {}
+    for key, value in (config.get("departments") or {}).items():
+        normalized_key = str(key or "").strip().lower()
+        if not normalized_key:
+            continue
+        dept_channels[normalized_key] = _normalize_list(value)
+
+    employment_type_channels = {}
+    for key, value in (config.get("employment_type") or {}).items():
+        normalized_key = str(key or "").strip().lower()
+        if not normalized_key:
+            continue
+        employment_type_channels[normalized_key] = _normalize_list(value)
+
+    return {
+        "global": global_channels,
+        "departments": dept_channels,
+        "employment_type": employment_type_channels,
+    }
+
+
+def _employment_key(employment_type):
+    emp_type = str(employment_type or "").strip().lower()
+    if "supplier" in emp_type:
+        return "supplier"
+    if any(token in emp_type for token in ("intern", "temporary")):
+        return "intern"
+    if any(token in emp_type for token in ("contractor", "1099")):
+        return "contractor"
+    if "full-time" in emp_type:
+        return "full_time"
+    return "other"
+
+
+def _target_channels_for_user(user, policy):
+    target_channels = set()
+
+    # Global channel assignment applies to all non-supplier users by default.
+    if _employment_key(user.employment_type) != "supplier":
+        target_channels.update(policy.get("global", []))
+
+    employment_type_channels = policy.get("employment_type", {})
+    target_channels.update(employment_type_channels.get(_employment_key(user.employment_type), []))
+
+    dept_key = str(user.department or "").strip().lower()
+    department_channels = policy.get("departments", {})
+    target_channels.update(department_channels.get(dept_key, []))
+
+    return sorted(ch for ch in target_channels if ch)
+
 def add_to_channels(context):
     """
     Adds the user to default and department-specific Slack channels.
@@ -37,13 +112,18 @@ def add_to_channels(context):
     user = context.get("user_profile")
     if not user:
         return {"ok": False, "detail": "Missing user_profile in action context."}
+    policy = _load_channel_policy()
+    target_channels = _target_channels_for_user(user, policy)
+    if not target_channels:
+        return {"ok": True, "detail": "No Slack channels matched policy; skipped."}
+
     if not CONFIG.get("SLACK_TOKEN"):
         logger.warning("⚠️ Slack token missing. Skipping Slack channel assignment.")
         return {"ok": True, "detail": "SLACK_TOKEN missing; skipped Slack channel assignment."}
 
     # 1. Get Slack User ID with Wait Loop
     user_id = None
-    email = user.email
+    email = user.work_email
     
     logger.info(f"⏳ Slack: Waiting for user {email} to exist...")
     
@@ -72,53 +152,11 @@ def add_to_channels(context):
             "detail": f"Slack user not found after {timeout}s; channel assignment skipped (SCIM lag).",
         }
 
-    # 2. Load Channel Rules
-    channels_file = os.path.join("servus", "data", "slack_channels.yaml")
-    if not os.path.exists(channels_file):
-        logger.error(f"Missing data file: {channels_file}")
-        return {"ok": False, "detail": f"Missing Slack channel map: {channels_file}"}
-
-    with open(channels_file, 'r') as f:
-        config = yaml.safe_load(f)
-
-    # 3. Determine Target Channels
-    target_channels = set()
-    emp_type = user.employment_type.lower()
-    
-    # A. Employee Type Logic
-    if "supplier" in emp_type:
-        logger.info("   ℹ️ Supplier detected - skipping default channels.")
-        # Suppliers get NO default channels, only explicit department ones if allowed
-    else:
-        # Everyone else gets Global channels
-        target_channels.update(config.get("global", []))
-        
-        # Specific Role Channels
-        if "full-time" in emp_type:
-            # Add FTE specific channels if any (e.g. #all-hands is usually in global, but if split:)
-            target_channels.add("all-hands") 
-        elif "contractor" in emp_type or "1099" in emp_type:
-            target_channels.add("contractors")
-        elif "intern" in emp_type or "temporary" in emp_type:
-            target_channels.add("interns")
-
-    # B. Department Logic
-    # Normalize department to lowercase for matching
-    dept_key = user.department.lower() if user.department else "unknown"
-    
-    # Add Department specific channels if defined
-    # Note: Suppliers might need to be excluded here too depending on policy, 
-    # but usually if they are in "Engineering" they need "engineering-chat".
-    if dept_key in config.get("departments", {}):
-        target_channels.update(config["departments"][dept_key])
-    
-    logger.info(f"Adding {user.email} to {len(target_channels)} Slack channels...")
-    if not target_channels:
-        return {"ok": True, "detail": "No Slack channels matched policy; skipped."}
+    logger.info(f"Adding {user.work_email} to {len(target_channels)} Slack channels...")
 
     if context.get("dry_run"):
         logger.info(f"[DRY-RUN] Would add to: {target_channels}")
-        return {"ok": True, "detail": f"Dry run: would add to channels {sorted(target_channels)}."}
+        return {"ok": True, "detail": f"Dry run: would add to channels {target_channels}."}
 
     # 4. Invite User
     url = "https://slack.com/api/conversations.invite"
@@ -130,7 +168,7 @@ def add_to_channels(context):
         if not channel_id: continue # Skip empty
         
         payload = {"channel": channel_id, "users": user_id}
-        r = requests.post(url, headers=_get_headers(), json=payload)
+        r = requests.post(url, headers=_get_headers(), json=payload, timeout=10)
         resp = r.json()
         
         if resp.get("ok"):

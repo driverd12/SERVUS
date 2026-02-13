@@ -1,9 +1,14 @@
 global:
   full_time:
-    - b-staff@boom.aero
-  contractor: []
-  intern: []
-  supplier: []
+    - team@boom.aero
+  contractor:
+    - contractors@boom.aero
+  intern:
+    - contractors@boom.aero
+    - internships@boom.aero
+  supplier:
+    - contractors@boom.aero
+    - suppliers@boom.aero
 
 departments:
   engineering:

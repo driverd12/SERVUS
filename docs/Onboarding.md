@@ -62,6 +62,14 @@ The opposite of [[Offboarding]]!
 - Google group assignment policy is data-driven in `servus/data/google_groups.yaml`.
 - Slack channel assignment policy is data-driven in `servus/data/slack_channels.yaml`.
 - If the policy file has no matching targets for a user, the step is skipped with an explicit success detail (`...matched policy; skipped`).
+- Current default Google policy:
+  - FTE: `team@boom.aero`
+  - Contractor: `contractors@boom.aero`
+  - Intern: `contractors@boom.aero` + `internships@boom.aero`
+  - Supplier: `contractors@boom.aero` + `suppliers@boom.aero`
+- Current default Slack global channels (by name):
+  - `company-announcements`, `hq4_alarm`, `hq4-facilities`, `hq4-announcements`, `new-part-who-dis`, `news`, `random`, `ev`, `kitties`, `puppies`, `lemons`, `coolshit`, `arrivals-departures`, `casp-facilities`, `ai-deas`, `ironbird-facilities`, `quotewall`, `be-inspired`
+- Slack channel automation requires invite-write scope on `SERVUS_SLACK_ADMIN_TOKEN` (`conversations:write` or `channels:write`/`groups:write` equivalent).
 
 ### Queue submission helper (headless-safe)
 

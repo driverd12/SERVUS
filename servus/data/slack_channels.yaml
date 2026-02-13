@@ -1,3 +1,23 @@
+global:
+  - C03K49RUR   # company-announcements
+  - C08BKV062E7 # hq4_alarm
+  - C04N9EYMZH8 # hq4-facilities
+  - C0HDVLJRW   # hq4-announcements
+  - C096S1ZTM61 # new-part-who-dis
+  - C0HDTU95W   # news
+  - C03K49RUT   # random
+  - C8N7X5DK4   # ev
+  - CQW9QGGFR   # kitties
+  - C3JD6UD38   # puppies
+  - C0VNF2NS1   # lemons
+  - C09FQK8E7TK # coolshit
+  - C0586LM1K6Z # arrivals-departures
+  - C08SRPX94TT # casp-facilities
+  - C08P3EFSS23 # ai-deas
+  - C08S52YEFN0 # ironbird-facilities
+  - C0CNSTACE   # quotewall
+  - CUM4497U5   # be-inspired
+
 departments:
   engineering: []
   finance: []
@@ -6,4 +26,3 @@ departments:
   marketing: []
   people: []
   sales: []
-global: []

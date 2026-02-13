@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+from unittest.mock import call
 
 from servus.integrations import google_gam
 from servus.models import UserProfile
@@ -48,10 +49,41 @@ class GoogleGamGroupSemanticsTests(unittest.TestCase):
         self.assertIn("already_member=1", result["detail"])
         self.assertIn("failed=0", result["detail"])
 
-    def test_add_groups_skips_when_policy_matches_no_groups(self):
+    @patch("servus.integrations.google_gam.run_gam")
+    def test_add_groups_maps_supplier_to_non_fte_groups(self, run_gam_mock):
+        run_gam_mock.side_effect = [
+            (True, "", ""),
+            (True, "", ""),
+        ]
         result = google_gam.add_groups(_context(employment_type="Supplier", department="Unknown"))
+
         self.assertTrue(result["ok"])
-        self.assertIn("No Google groups matched policy", result["detail"])
+        self.assertIn("group_targets=2", result["detail"])
+        self.assertIn("failed=0", result["detail"])
+        run_gam_mock.assert_has_calls(
+            [
+                call(
+                    [
+                        "update",
+                        "group",
+                        "contractors@boom.aero",
+                        "add",
+                        "member",
+                        "kayla.durgee@boom.aero",
+                    ]
+                ),
+                call(
+                    [
+                        "update",
+                        "group",
+                        "suppliers@boom.aero",
+                        "add",
+                        "member",
+                        "kayla.durgee@boom.aero",
+                    ]
+                ),
+            ]
+        )
 
 
 if __name__ == "__main__":

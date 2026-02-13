@@ -32,6 +32,7 @@ Run these checks when validating urgent/manual onboarding support:
 - Validate queue submission helper with `python3 scripts/live_onboard_test.py --dry-run ...`.
 - Confirm helper writes `HOLD` by default and only executes after explicit `READY` approval.
 - Validate minimal enqueue path (`--work-email` + `--start-date`) and verify Rippling/Okta enrichment fills remaining profile fields.
+- Confirm Google policy defaults are correct for employment types (`team@boom.aero` for FTE, `contractors@boom.aero` for non-FTE, plus intern/supplier add-ons).
 - Confirm Rippling token has `workers.read` and that `GET /workers?limit=1` returns `200` before relying on email-only enrichment.
 - Confirm scheduler logs the configured manual override CSV path at startup.
 - Confirm `servus/data/google_groups.yaml` and `servus/data/slack_channels.yaml` reflect intended production targets before enabling live onboarding.

@@ -173,3 +173,9 @@
 - **CONSEQUENCES:** With default `SERVUS_BRIVO_QUEUE_REQUIRED=false`, unreachable/missing queue emits warning (not blocker); strict queue enforcement remains available by setting the flag true.
 - **ROLLBACK:** Remove `BRIVO_QUEUE_REQUIRED` config handling and revert preflight logic to always fail on queue reachability/config issues.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/config.py, /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/.env.example
+
+- **DECISION:** Set production onboarding policy defaults from exported Google/Slack inventories (FTE -> `team@boom.aero`; non-FTE -> `contractors@boom.aero`; curated global Slack channels for all non-suppliers).
+- **CONTEXT:** Operators provided full CSV inventories and required deterministic, data-driven defaults without hardcoded action logic changes.
+- **CONSEQUENCES:** Group/channel targeting is now explicit in policy YAMLs; future tuning is file-only and auditable. Intern policy currently uses `internships@boom.aero` (existing group) alongside contractors baseline; suppliers get `suppliers@boom.aero` in addition to contractors baseline.
+- **ROLLBACK:** Revert `servus/data/google_groups.yaml`, `servus/data/slack_channels.yaml`, related docs updates, and rerun preflight/tests.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/google_groups.yaml, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/slack_channels.yaml, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md

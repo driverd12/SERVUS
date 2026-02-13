@@ -1,0 +1,256 @@
+email,id,name,description,directMembersCount,adminCreated,aliases,nonEditableAliases
+2fa-not-required@boom.aero,01egqt2p4037wrw,2FA-not-required,Exempt from 2FA / 2SV / MFA,56,True,,2FA-not-required@boom.aero.test-google-a.com 2FA-not-required@boomsupersonic.com
+3pr@boom.aero,017dp8vu38ubqqq,3pr,IT 3rd party risk,1,False,,3pr@boom.aero.test-google-a.com 3pr@boomsupersonic.com
+abigail.britt@boom.aero,00gjdgxs47b4umc,abigail.britt,Abby email inbox distribution,3,True,,abigail.britt@boom.aero.test-google-a.com abigail.britt@boomsupersonic.com
+accounting-offboarding-notice@boom.aero,035nkun23bvgf07,Accounting Offboarding Notice,This email alias will be used by the People Team to notify the accounting team of employee offboardings.,2,False,,accounting-offboarding-notice@boom.aero.test-google-a.com accounting-offboarding-notice@boomsupersonic.com
+accounting@boom.aero,02dlolyb1rh4wo1,accounting,Group for all accounting related documents and or business,3,True,,accounting@boom.aero.test-google-a.com accounting@boomsupersonic.com
+accountspayable@boom.aero,01302m922ymqcbe,Accounts Payable,"address used for incoming invoices, etc",3,True,,accountspayable@boom.aero.test-google-a.com accountspayable@boomsupersonic.com
+admin@boom.aero,04k668n30gxkx2a,admin,,3,True,,admin@boom.aero.test-google-a.com admin@boomsupersonic.com
+afo@boom.aero,01gf8i834i7z9oc,AFO,AFO UAC,1,True,afouac@boom.aero,afouac@boom.aero.test-google-a.com afouac@boomsupersonic.com afo@boom.aero.test-google-a.com afo@boomsupersonic.com
+apple@boom.aero,02iq8gzs177adra,Apple,General Apple ID account,2,True,,apple@boom.aero.test-google-a.com apple@boomsupersonic.com
+ask-hq4@boom.aero,03dy6vkm2v67odw,Ask HQ4,,0,True,,ask-hq4@boom.aero.test-google-a.com ask-hq4@boomsupersonic.com
+ask-infosec@boom.aero,04f1mdlm21u73ma,InfoSec,,1,False,,ask-InfoSec@boom.aero.test-google-a.com ask-InfoSec@boomsupersonic.com
+ask-it-old2@boom.aero,040ew0vw1j4l580,ask-it-old,Linear IT ticket intake group,1,True,help@boom.aero it.helpdesk@boom.aero foundthis@boom.aero,help@boom.aero.test-google-a.com help@boomsupersonic.com it.helpdesk@boom.aero.test-google-a.com it.helpdesk@boomsupersonic.com foundthis@boom.aero.test-google-a.com foundthis@boomsupersonic.com ask-it-old2@boom.aero.test-google-a.com ask-it-old2@boomsupersonic.com
+ask-legal@boom.aero,03rdcrjn28f2gub,ask-legal,,1,True,,ask-legal@boom.aero.test-google-a.com ask-legal@boomsupersonic.com
+ask-marketing@boom.aero,039kk8xu3jk7ff9,Ask Marketing,Ticket management group for the marketing Dept.,1,True,,ask-marketing@boom.aero.test-google-a.com ask-marketing@boomsupersonic.com
+ask-people@boom.aero,03bj1y381uamkxj,Ask People,,3,True,,ask-people@boom.aero.test-google-a.com ask-people@boomsupersonic.com
+ask-recognitioncommittee@boom.aero,02szc72q3twcbt5,Ask-Recognition Committee,,0,True,,ask-recognitioncommittee@boom.aero.test-google-a.com ask-recognitioncommittee@boomsupersonic.com
+avionics.notifications@boom.aero,04i7ojhp3npsr99,Avionics.Notifications,,2,False,,avionics.notifications@boom.aero.test-google-a.com avionics.notifications@boomsupersonic.com
+avionicsteam@boom.aero,048pi1tg1108ely,Avionics Team,,2,True,,AvionicsTeam@boom.aero.test-google-a.com AvionicsTeam@boomsupersonic.com
+aws@boom.aero,00rjefff39a0yue,aws,Amazon AWS,3,True,,aws@boom.aero.test-google-a.com aws@boomsupersonic.com
+b-staff@boom.aero,01baon6m3bned0a,b-staff,,12,False,,b-staff@boom.aero.test-google-a.com b-staff@boomsupersonic.com
+bambulabs-owners@boom.aero,03o7alnk43setwa,bambulabs-owners,bambulabs-owners,2,True,,bambulabs-owners@boom.aero.test-google-a.com bambulabs-owners@boomsupersonic.com
+benefits@boom.aero,03vac5uf22p4oty,Benefits,Benefits DL,2,True,,benefits@boom.aero.test-google-a.com benefits@boomsupersonic.com
+board@boom.aero,03bj1y3845l7vga,board,board of directors,8,True,,board@boom.aero.test-google-a.com board@boomsupersonic.com
+boom-3dx-users@boom.aero,01664s553pfopub,boom-3dx-users,Boom 3DX user email distribution,37,True,,boom-3dx-users@boom.aero.test-google-a.com boom-3dx-users@boomsupersonic.com
+boom-ipad@boom.aero,02w5ecyt36h7sel,Ipad,,1,True,,boom-ipad@boomsupersonic.com boom-ipad@boom.aero.test-google-a.com
+boom-website-security@boom.aero,0147n2zr1j3xdjm,Website Security,where the group can discuss security notifications other tools managed by Boom,7,False,,boom-website-security@boom.aero.test-google-a.com boom-website-security@boomsupersonic.com
+boom.tablets@boom.aero,02y3w2472gyp36e,boom.tablets,Tablet managed Apple ID in business.apple.com,2,True,,boom.tablets@boom.aero.test-google-a.com boom.tablets@boomsupersonic.com
+boomamexteam@boom.aero,03hv69ve0mcl7ro,Boom Amex Team,Boom Amex Team,11,True,,BoomAmexTeam@boom.aero.test-google-a.com BoomAmexTeam@boomsupersonic.com
+boomgov@boom.aero,048pi1tg2bbwn7b,Boom Gov,,0,True,,BoomGov@boom.aero.test-google-a.com BoomGov@boomsupersonic.com
+boommetaquest@boom.aero,04du1wux0rz08r6,boommetaquest,Boom Business Meta Quest account,1,True,,boommetaquest@boom.aero.test-google-a.com boommetaquest@boomsupersonic.com
+boomshared-flighttest@boom.aero,046r0co214roevl,boomshared-flighttest,Flight Test members with access to Boom Shared,0,True,,boomshared-flighttest@boom.aero.test-google-a.com boomshared-flighttest@boomsupersonic.com
+boomsocial@boom.aero,00pkwqa12g94dkw,Boom Social,,3,True,,BoomSocial@boom.aero.test-google-a.com BoomSocial@boomsupersonic.com
+brandfolder.admin@boom.aero,026in1rg0wlgb56,Brandfolder Admin,System Administrator address for Brandfolder admin e-mail,1,True,,brandfolder.admin@boom.aero.test-google-a.com brandfolder.admin@boomsupersonic.com
+budget-owners@boom.aero,03s49zyc3k3carv,Budget Owners,All budget owners/stakeholders to announce updates from the FP&A team.,2,False,,budget-owners@boom.aero.test-google-a.com budget-owners@boomsupersonic.com
+burpsuite@boom.aero,03fwokq01hqwcpj,Burp suite,,2,True,,burpsuite@boom.aero.test-google-a.com burpsuite@boomsupersonic.com
+business-ops@boom.aero,01qoc8b148516dw,businessops,Internal UAC Group,2,False,businessops@boom.aero,businessops@boom.aero.test-google-a.com businessops@boomsupersonic.com business-ops@boom.aero.test-google-a.com business-ops@boomsupersonic.com
+business@boom.aero,02xcytpi0yqhfx7,business,Business Team Google Group  (Formally Commercial team),12,True,commercial@boom.aero,commercial@boom.aero.test-google-a.com commercial@boomsupersonic.com business@boom.aero.test-google-a.com business@boomsupersonic.com
+careers@boom.aero,02afmg281wcf26v,careers,,4,True,,careers@boom.aero.test-google-a.com careers@boomsupersonic.com
+catiausers@boom.aero,04du1wux197cr3y,Catia Users,,28,True,,catiausers@boom.aero.test-google-a.com catiausers@boomsupersonic.com
+ccb@boom.aero,03x8tuzt0zahewy,CCB,CCB Members,4,False,,ccb@boom.aero.test-google-a.com ccb@boomsupersonic.com
+classroom_teachers@boom.aero,02nusc192hiq4y6,Classroom Teachers,"This group includes all Classroom teachers in your domain. Users who say they are teachers are added as pending members until you approve. Note that members of this group have additional privileges, which you can control in the Admin Console. WARNING: Do not delete this group.",0,False,,classroom_teachers@boom.aero.test-google-a.com classroom_teachers@boomsupersonic.com
+commercial.leadership@boom.aero,02zbgiuw3lsn401,Commercial Leadership,Commercial Leadership,1,True,,commercial.leadership@boom.aero.test-google-a.com commercial.leadership@boomsupersonic.com
+commercial.team@boom.aero,03mzq4wv11z96yn,commercial.team,,1,True,,commercial.team@boom.aero.test-google-a.com commercial.team@boomsupersonic.com
+communications@boom.aero,00vx12273qg95w1,communications,Key stakeholders for internal communications at Boom,0,True,,communications@boom.aero.test-google-a.com communications@boomsupersonic.com
+connect@boom.aero,01ksv4uv36o72a8,connect,Marketing,1,True,,connect@boom.aero.test-google-a.com connect@boomsupersonic.com
+cont_eng_support@boom.aero,026in1rg1nzdb3m,Continuing Engineering Support,,3,True,,Cont_eng_support@boom.aero.test-google-a.com Cont_eng_support@boomsupersonic.com
+contact@boom.aero,03mzq4wv3wtzpf7,Contact,,0,True,,contact@boom.aero.test-google-a.com contact@boomsupersonic.com
+contractors-overture@boom.aero,02lwamvv1iao7ke,contractors overture,Contractors for Overture program,1,True,,contractors-overture@boom.aero.test-google-a.com contractors-overture@boomsupersonic.com
+contractors-symphony@boom.aero,02koq6562b23qfu,contractors symphony,contractors symphony,1,True,,contractors-symphony@boom.aero.test-google-a.com contractors-symphony@boomsupersonic.com
+contractors@boom.aero,02zbgiuw48y8cpj,Contractors,Contractors,30,True,,Contractors@boom.aero.test-google-a.com Contractors@boomsupersonic.com
+contractorupdates@boom.aero,03j2qqm32wnzxdv,Contractor Updates,People Team - Forwarding to Zendesk,1,True,,ContractorUpdates@boom.aero.test-google-a.com ContractorUpdates@boomsupersonic.com
+control_room_eng@boom.aero,032hioqz3mmhdn5,Control Room Engineers,,15,True,,Control_Room_Eng@boom.aero.test-google-a.com Control_Room_Eng@boomsupersonic.com
+controlroom1@boom.aero,04du1wux381hz7c,Control Room 1,,6,True,,ControlRoom1@boom.aero.test-google-a.com ControlRoom1@boomsupersonic.com
+controlroom2@boom.aero,04anzqyu3k55tde,Control Room 2,,3,True,,ControlRoom2@boom.aero.test-google-a.com ControlRoom2@boomsupersonic.com
+cto-staff@boom.aero,035nkun22qoetnk,CTO Staff,,0,False,,cto-staff@boom.aero.test-google-a.com cto-staff@boomsupersonic.com
+david.hunter@boom.aero,04i7ojhp3rrmqf6,David Hunter,,2,True,,david.hunter@boom.aero.test-google-a.com david.hunter@boomsupersonic.com
+design-talent@boom.aero,035nkun22em1hi9,Design Talent,,1,False,,design-talent@boom.aero.test-google-a.com design-talent@boomsupersonic.com
+digicert@boom.aero,02koq65618j9qol,digicert,,1,False,,digicert@boom.aero.test-google-a.com digicert@boomsupersonic.com
+docker@boom.aero,023ckvvd22zxh2k,docker,Docker docker docker docking the docker doc,3,True,,docker@boom.aero.test-google-a.com docker@boomsupersonic.com
+docusign@boom.aero,048pi1tg0l2adh6,docusign,,0,True,docusign-icertis@boom.aero,docusign@boom.aero.test-google-a.com docusign@boomsupersonic.com docusign-icertis@boom.aero.test-google-a.com docusign-icertis@boomsupersonic.com
+ea-oc@boom.aero,01egqt2p230e78m,ea-oc,Used to give edit access to office calendars - Executive Assistants and Office Coordinators,5,True,,ea-oc@boom.aero.test-google-a.com ea-oc@boomsupersonic.com
+ea-receiving@boom.aero,030j0zll3s3n6ar,ea-receiving,evergreen contact for Shipping and Receiving in ironbird ,2,True,,ea-receiving@boom.aero.test-google-a.com ea-receiving@boomsupersonic.com
+email-test-group@boom.aero,03dy6vkm2unp7x4,email-test-group,,2,True,,email-test-group@boom.aero.test-google-a.com email-test-group@boomsupersonic.com
+emech@boom.aero,04anzqyu45z781w,EMech,Electro-Mechanical Systems team at Boom Supersonic,3,False,,emech@boom.aero.test-google-a.com emech@boomsupersonic.com
+employmentverification@boom.aero,01egqt2p1v36s10,Employment Verification,,2,True,,employmentverification@boom.aero.test-google-a.com employmentverification@boomsupersonic.com
+eng_leadership@boom.aero,03l18frh2aggi14,Engineering Leadership,,0,True,,Eng_Leadership@boom.aero.test-google-a.com Eng_Leadership@boomsupersonic.com
+engineering@boom.aero,03o7alnk34njd6s,engineering,All Engineers ,61,True,,engineering@boom.aero.test-google-a.com engineering@boomsupersonic.com
+engineering_leads@boom.aero,00lnxbz91fcm0d6,Engineering Leads,email distribution for engineering leads.,1,True,,engineering_leads@boom.aero.test-google-a.com engineering_leads@boomsupersonic.com
+engineeringdirectors@boom.aero,01jlao461tyzfht,Engineering Directors,Engineering Directors ,0,True,,engineeringdirectors@boom.aero.test-google-a.com engineeringdirectors@boomsupersonic.com
+equity@boom.aero,03fwokq012lnhsc,Equity,,3,True,,equity@boom.aero.test-google-a.com equity@boomsupersonic.com
+equityshares@boom.aero,030j0zll3hscsy5,Equity Shares,Equity Shares,1,True,,equityshares@boom.aero.test-google-a.com equityshares@boomsupersonic.com
+eteam@boom.aero,00haapch1avvf6j,eteam,eteam,4,True,,eteam@boom.aero.test-google-a.com eteam@boomsupersonic.com
+eventboard@boom.aero,03whwml44ek3wf1,Eventboard Sync Group,,0,True,,eventboard@boom.aero.test-google-a.com eventboard@boomsupersonic.com
+events@boom.aero,02et92p00vprw1i,Events,Events coordination ,2,True,,Events@boom.aero.test-google-a.com Events@boomsupersonic.com
+exceptional-talent@boom.aero,03hv69ve0kfryg0,exceptional-talent,,1,False,,exceptional-talent@boom.aero.test-google-a.com exceptional-talent@boomsupersonic.com
+executiveassistants@boom.aero,030j0zll1b21yvg,Executiveassistants,,2,True,,executiveassistants@boom.aero.test-google-a.com executiveassistants@boomsupersonic.com
+executiveteam@boom.aero,02lwamvv13ki2sl,Executive team,,3,True,,ExecutiveTeam@boom.aero.test-google-a.com ExecutiveTeam@boomsupersonic.com
+exportcontrol@boom.aero,01hmsyys46kn9j7,Export Control,,0,True,,exportcontrol@boom.aero.test-google-a.com exportcontrol@boomsupersonic.com
+ey@boom.aero,00sqyw64305b64d,ey,Ernst & Young,3,True,,ey@boom.aero.test-google-a.com ey@boomsupersonic.com
+facilities@boom.aero,0184mhaj0woq9am,Facilities,Facilities group,2,True,ask-facilities@boom.aero,Facilities@boom.aero.test-google-a.com Facilities@boomsupersonic.com ask-facilities@boom.aero.test-google-a.com ask-facilities@boomsupersonic.com
+fal-apple-id@boom.aero,030j0zll4kldmi5,fal-apple-id,FAL apple id,1,True,,fal-apple-id@boom.aero.test-google-a.com fal-apple-id@boomsupersonic.com
+fal.safety.ehs@boom.aero,030j0zll1843unk,FAL Safety,For reporting Safety/EHS related items at the Greensboro location,1,True,,FAL.Safety.EHS@boom.aero.test-google-a.com FAL.Safety.EHS@boomsupersonic.com
+farnborough-participants@boom.aero,04d34og82n7eme5,farnborough-participants,,2,True,,farnborough-participants@boom.aero.test-google-a.com farnborough-participants@boomsupersonic.com
+farnborough@boom.aero,02fk6b3p1oq29ys,Farnborough,,1,True,,farnborough@boom.aero.test-google-a.com farnborough@boomsupersonic.com
+feedback@boom.aero,03mzq4wv3hqbfdr,feedback,,1,True,,feedback@boom.aero.test-google-a.com feedback@boomsupersonic.com
+fiasupport@boom.aero,01664s554d6skl7,FIAsupport,FIAsupport,1,True,,FIAsupport@boom.aero.test-google-a.com FIAsupport@boomsupersonic.com
+finance@boom.aero,02iq8gzs39vyfcu,Finance,Finance Team,6,True,,Finance@boom.aero.test-google-a.com Finance@boomsupersonic.com
+financeteam@boom.aero,01ci93xb0q3kbr1,Finance Team,shonn and steve,1,True,,financeteam@boom.aero.test-google-a.com financeteam@boomsupersonic.com
+flight-sciences@boom.aero,045jfvxd1ovty8z,Flight Sciences,,9,False,,flight-sciences@boom.aero.test-google-a.com flight-sciences@boomsupersonic.com
+flighttesteventteam@boom.aero,02grqrue3bx6zca,Flight Test Event Team,,4,True,,FlightTestEventTeam@boom.aero.test-google-a.com FlightTestEventTeam@boomsupersonic.com
+flyby@boom.aero,025b2l0r10vuhmf,flyby,Marketing,2,True,,flyby@boom.aero.test-google-a.com flyby@boomsupersonic.com
+founders@boom.aero,04bvk7pj0ru8oq1,Founders,,1,True,,founders@boom.aero.test-google-a.com founders@boomsupersonic.com
+foxit@boom.aero,04i7ojhp0lsoo4i,foxit,used for foxit purchasing ,1,True,,foxit@boom.aero.test-google-a.com foxit@boomsupersonic.com
+fpa-hc@boom.aero,0279ka652gyb4zv,FP&A-HC,FPA-HC group,0,True,,FPA-HC@boom.aero.test-google-a.com FPA-HC@boomsupersonic.com
+fpa-offboarding-notice@boom.aero,01baon6m3uzyqmx,FP&A Offboarding Notice,This group alias is used to notify the FP&A team of employee offboardings.,0,False,,fpa-offboarding-notice@boom.aero.test-google-a.com fpa-offboarding-notice@boomsupersonic.com
+fpa@boom.aero,01302m922eoacyu,FP&A,FPA group,0,True,,FPA@boom.aero.test-google-a.com FPA@boomsupersonic.com
+friends@boom.aero,01ci93xb3gdwvvo,Friends,"Advisors, investors, trusted friends",30,True,,friends@boom.aero.test-google-a.com friends@boomsupersonic.com
+ft_team@boom.aero,03fwokq038wl9ny,FT Team,,2,True,,ft_team@boom.aero.test-google-a.com ft_team@boomsupersonic.com
+fte_leads@boom.aero,0319y80a0sxsdjs,FTE Leads,,2,True,,FTE_Leads@boom.aero.test-google-a.com FTE_Leads@boomsupersonic.com
+ftptoday@boom.aero,02xcytpi2q8n99k,FTP Today Billing Account,,2,True,,ftptoday@boom.aero.test-google-a.com ftptoday@boomsupersonic.com
+gdrive-xb1-controlled-documents-contentmanager@boom.aero,02iq8gzs265r8kf,gdrive-xb1-controlled-documents-contentmanager,,15,True,,gdrive-xb1-controlled-documents-contentmanager@boom.aero.test-google-a.com gdrive-xb1-controlled-documents-contentmanager@boomsupersonic.com
+gdrive-xb1-controlled-documents-contributor@boom.aero,0206ipza0prf22w,gdrive-xb1-controlled-documents-contributor,,17,True,,gdrive-xb1-controlled-documents-contributor@boom.aero.test-google-a.com gdrive-xb1-controlled-documents-contributor@boomsupersonic.com
+gdrive-xb1-controlled-documents-manager@boom.aero,01ksv4uv3mpz8ff,gdrive-xb1-controlled-documents-manager,,2,True,,gdrive-xb1-controlled-documents-manager@boom.aero.test-google-a.com gdrive-xb1-controlled-documents-manager@boomsupersonic.com
+gitadmin@boom.aero,03as4poj1vjm572,gitadmin,Group for git management and admin account,1,True,,gitadmin@boom.aero.test-google-a.com gitadmin@boomsupersonic.com
+github-shared@boom.aero,02nusc194gikemv,GithubShared,,0,True,,github-shared@boom.aero.test-google-a.com github-shared@boomsupersonic.com
+gopro@boom.aero,02xcytpi0t8vr81,GoPro,GoPro Photos,1,True,,gopro@boom.aero.test-google-a.com gopro@boomsupersonic.com
+hellosign@boom.aero,036ei31r1k9prgp,hellosign,,1,True,,hellosign@boom.aero.test-google-a.com hellosign@boomsupersonic.com
+hexos@boom.aero,02p2csry35twoas,hexos,Group for Hexos account,2,True,,hexos@boom.aero.test-google-a.com hexos@boomsupersonic.com
+hitek-workers@boom.aero,04d34og84e1pkzc,HiTek-workers,,0,False,,hitek-workers@boom.aero.test-google-a.com hitek-workers@boomsupersonic.com
+hpc@boom.aero,01t3h5sf0mxpin7,HPC,,2,True,,hpc@boom.aero.test-google-a.com hpc@boomsupersonic.com
+icertis-admins@boom.aero,01664s550v1pbpf,icertis-admins,iCertis Admin users,1,True,,icertis-admins@boom.aero.test-google-a.com icertis-admins@boomsupersonic.com
+icertis-errors@boom.aero,03ep43zb1qnimxz,icertis errors,Group for notification of iCertis API/Integration errors,1,True,,icertis-errors@boom.aero.test-google-a.com icertis-errors@boomsupersonic.com
+igt@boom.aero,01pxezwc36o869h,IGT,,75,True,,igt@boom.aero.test-google-a.com igt@boomsupersonic.com
+infinit@boom.aero,01tuee742ozdi2u,infinit,IT/Finance teams,2,False,,infinit@boom.aero.test-google-a.com infinit@boomsupersonic.com
+infinitleadership@boom.aero,040ew0vw4gktj7m,infinit.leadership,Finance and IT leadership,3,False,,infinitleadership@boom.aero.test-google-a.com infinitleadership@boomsupersonic.com
+informationsecurity@boom.aero,00rjefff13y3fsp,Information Security,,3,True,,informationsecurity@boom.aero.test-google-a.com informationsecurity@boomsupersonic.com
+internships@boom.aero,023ckvvd3oki9at,internships,,1,True,,internships@boom.aero.test-google-a.com internships@boomsupersonic.com
+investors@boom.aero,01baon6m0vbhxdc,Investors,,1,True,,investors@boom.aero.test-google-a.com investors@boomsupersonic.com
+investorupdates@boom.aero,02r0uhxc3469fiq,Investor Updates,,384,True,,InvestorUpdates@boom.aero.test-google-a.com InvestorUpdates@boomsupersonic.com
+ironbird@boom.aero,04anzqyu4bzkp9r,ironbird,ironbird,13,True,,ironbird@boom.aero.test-google-a.com ironbird@boomsupersonic.com
+ironbird_team@boom.aero,03bj1y383yv6xme,Ironbird Team,,3,True,,ironbird_team@boom.aero.test-google-a.com ironbird_team@boomsupersonic.com
+irp-on-call@boom.aero,045jfvxd3ta7k25,irp-on-call,IRP address to trigger incident response on call,21,True,,irp-on-call@boom.aero.test-google-a.com irp-on-call@boomsupersonic.com
+it-backups@boom.aero,00meukdy4i63kbw,IT Backups,Group for backup systems and IT backup monitoring,1,True,,it-backups@boom.aero.test-google-a.com it-backups@boomsupersonic.com
+it-emergency-on-call@boom.aero,03oy7u293wtogr5,it-emergency-on-call,,2,True,,it-emergency-on-call@boom.aero.test-google-a.com it-emergency-on-call@boomsupersonic.com
+it-testing-2@boom.aero,01egqt2p4aj5gsp,IT-TESTING-2,another test group for workflows,0,True,,it-testing-2@boom.aero.test-google-a.com it-testing-2@boomsupersonic.com
+it-testing@boom.aero,043ky6rz35ew4ce,IT TESTING,for testing workflows,0,True,,it-testing@boom.aero.test-google-a.com it-testing@boomsupersonic.com
+it-viceversa@boom.aero,03oy7u2922y4ut8,it-viceversa,"Alert group for the sync tool ""Viceversa"", which goes to some IT staff",2,True,,it-viceversa@boom.aero.test-google-a.com it-viceversa@boomsupersonic.com
+it.notifications@boom.aero,02ce457m0wm2t5k,IT Notifications,IT Systems Notifications,3,True,,it.notifications@boom.aero.test-google-a.com it.notifications@boomsupersonic.com
+it.security@boom.aero,03x8tuzt45gi7za,IT Security,IT Security,3,True,,it.security@boom.aero.test-google-a.com it.security@boomsupersonic.com
+it@boom.aero,01opuj5n3yfyump,IT,Email for software licensing and other misc IT related communication,6,True,AppleID@boom.aero zendesk.icertis@boom.aero,it@boom.aero.test-google-a.com it@boomsupersonic.com AppleID@boomsupersonic.com AppleID@boom.aero.test-google-a.com zendesk.icertis@boom.aero.test-google-a.com zendesk.icertis@boomsupersonic.com
+it_billing@boom.aero,03o7alnk420hw8q,IT Billing,,2,True,,IT_Billing@boom.aero.test-google-a.com IT_Billing@boomsupersonic.com
+itar@boom.aero,0319y80a3j0fm2a,ITAR,for ITAR related type registrations and the like,0,True,,ITAR@boom.aero.test-google-a.com ITAR@boomsupersonic.com
+itpurchasing@boom.aero,00haapch1tbb7dc,it.purchasing,billing info,3,False,,itpurchasing@boom.aero.test-google-a.com itpurchasing@boomsupersonic.com
+jamf@boom.aero,02koq6562x9q8iz,JAMF,admin for JAMF,1,True,,JAMF@boom.aero.test-google-a.com JAMF@boomsupersonic.com
+leads@boom.aero,01ci93xb1kvb7i0,Group Leads,,1,True,,Leads@boom.aero.test-google-a.com Leads@boomsupersonic.com
+learning@boom.aero,00vx12274fo3pt7,Learning,Used for email linked to Hub resources for new hires.,0,True,,learning@boom.aero.test-google-a.com learning@boomsupersonic.com
+legal@boom.aero,04iylrwe1md45m9,Legal,,1,True,,Legal@boom.aero.test-google-a.com Legal@boomsupersonic.com
+lhein-perchpartners@boom.aero,04h042r02bm00zr,LHein@perchpartners.com,,1,True,,lhein-perchpartners@boom.aero.test-google-a.com lhein-perchpartners@boomsupersonic.com
+linus.torvalds@boom.aero,01x0gk3718eypz5,linus,,2,True,,linus.torvalds@boom.aero.test-google-a.com linus.torvalds@boomsupersonic.com
+lteam@boom.aero,01tuee7426z8x2q,lteam,lteam,1,True,,lteam@boom.aero.test-google-a.com lteam@boomsupersonic.com
+mach2@boom.aero,01v1yuxt3kc0vq1,mach2,,1,True,,mach2@boom.aero.test-google-a.com mach2@boomsupersonic.com
+maintenance@boom.aero,04bvk7pj2awn2rt,Maintenance,,6,True,,Maintenance@boom.aero.test-google-a.com Maintenance@boomsupersonic.com
+marketing@boom.aero,02nusc1911dyo5o,Marketing,Marketing Mailbox,1,True,,marketing@boom.aero.test-google-a.com marketing@boomsupersonic.com
+media@boom.aero,01jlao460jp86vd,Media,,0,True,,Media@boom.aero.test-google-a.com Media@boomsupersonic.com
+meraki-owner@boom.aero,03ep43zb4kki0c9,meraki-owner,,2,True,,meraki-owner@boom.aero.test-google-a.com meraki-owner@boomsupersonic.com
+mfgeng@boom.aero,032hioqz4inbiso,Manufacturing Engineers,,9,True,,MFGeng@boom.aero.test-google-a.com MFGeng@boomsupersonic.com
+mfgteam@boom.aero,01fob9te1hqxx5d,MFGteam,Manufacturing Team @ Boom,13,True,,mfgteam@boomsupersonic.com mfgteam@boom.aero.test-google-a.com
+mfgtech@boom.aero,01ksv4uv20c3rnx,Manufacturing Build Team,,2,True,,MFGtech@boom.aero.test-google-a.com MFGtech@boomsupersonic.com
+mktgteam@boom.aero,02szc72q2hi7kb9,mktgteam,Marketing Team,1,True,,mktgteam@boom.aero.test-google-a.com mktgteam@boomsupersonic.com
+namebright@boom.aero,00zu0gcz45hu1dz,namebright@boom.aero,,2,False,,namebright@boom.aero.test-google-a.com namebright@boomsupersonic.com
+namecheap@boom.aero,02fk6b3p3gv9o9v,namecheap,,4,True,,namecheap@boom.aero.test-google-a.com namecheap@boomsupersonic.com
+netgoodsummit@boom.aero,03vac5uf1c1vvwz,Net Good Summit,,1,True,,netgoodsummit@boom.aero.test-google-a.com netgoodsummit@boomsupersonic.com
+newsletter@boom.aero,01hmsyys4ij2ozg,Newsletter,Email address for the newsletter,0,True,,newsletter@boom.aero.test-google-a.com newsletter@boomsupersonic.com
+ns2.notifications@boom.aero,00kgcv8k0tjf6x8,ns2.notifications,Notifications from SAP NS2. Typically about maintenance and downtime.,2,False,,ns2.notifications@boom.aero.test-google-a.com ns2.notifications@boomsupersonic.com
+office@boom.aero,00xvir7l3ed4iex,Office Admin,,3,True,,Office@boom.aero.test-google-a.com Office@boomsupersonic.com
+onboarding-info@boom.aero,03x8tuzt1j75i1h,onboarding-info,,4,False,,onboarding-info@boom.aero.test-google-a.com onboarding-info@boomsupersonic.com
+onboarding@boom.aero,02grqrue0grgfoa,Onboarding,Onboarding,1,True,,onboarding@boom.aero.test-google-a.com onboarding@boomsupersonic.com
+optimization-working-group@boom.aero,03cqmetx2lqczjs,Optimization Working Group,"Working group related to shape optimization including:
+    * Optimization schemes
+    * Constraints & Objectives
+    * Visualization of Objectives, DV's and constraints
+    * Overall framework including software evaluation",4,False,,optimization-working-group@boom.aero.test-google-a.com optimization-working-group@boomsupersonic.com
+orders@boom.aero,03as4poj12p5rk9,Orders,,1,True,,Orders@boom.aero.test-google-a.com Orders@boomsupersonic.com
+ov-prop@boom.aero,044sinio0heqiaj,Ov-Prop,John's Full Group,4,False,,ov-prop@boom.aero.test-google-a.com ov-prop@boomsupersonic.com
+ov-sdr-prop@boom.aero,02s8eyo13iue6mb,Ov-Sdr-Prop,,2,False,,ov-sdr-prop@boom.aero.test-google-a.com ov-sdr-prop@boomsupersonic.com
+overture-drive-compliance@boom.aero,02u6wntf3fj0913,overture-drive-compliance,"Overture Drive: Read, write, move and delete
+""Content Manager""",0,False,,overture-drive-compliance@boom.aero.test-google-a.com overture-drive-compliance@boomsupersonic.com
+overture-drive-manager@boom.aero,04f1mdlm1hhm5bh,overture-drive-manager,"Overture Drive: Read, write, move and delete and manage access
+""Manager""",0,False,,overture-drive-manager@boom.aero.test-google-a.com overture-drive-manager@boomsupersonic.com
+overture-drive-team@boom.aero,04i7ojhp2qzk6kq,overture-drive-team,"Overture Drive: Read, write, but not move or delete.
+""Contributor""",0,False,,overture-drive-team@boom.aero.test-google-a.com overture-drive-team@boomsupersonic.com
+overture-drive-viewers@boom.aero,03whwml43hzd8my,overture-drive-viewers,"Overture Drive: View, comment
+""Commenter""",0,False,,overture-drive-viewers@boom.aero.test-google-a.com overture-drive-viewers@boomsupersonic.com
+overture-engineering@boom.aero,01664s5543vch9p,overture engineering,overture-engineers ,19,True,,overture-engineering@boom.aero.test-google-a.com overture-engineering@boomsupersonic.com
+overture-pmo@boom.aero,0147n2zr2ff9sld,Overture PMO,Overture Program Management Office,0,False,,overture-pmo@boom.aero.test-google-a.com overture-pmo@boomsupersonic.com
+overture-simulation@boom.aero,02zbgiuw2cdg2ew,overture-simulation,,12,False,,overture-simulation@boom.aero.test-google-a.com overture-simulation@boomsupersonic.com
+overture_executiveteam@boom.aero,02fk6b3p3umr5ou,Overture Executive Summary Team,Overture Executive Summary Team,3,True,,overture_executiveteam@boom.aero.test-google-a.com overture_executiveteam@boomsupersonic.com
+overtureconfigcoaches@boom.aero,00haapch1q4vlky,Overture Config Coaches,,1,True,,overtureconfigcoaches@boom.aero.test-google-a.com overtureconfigcoaches@boomsupersonic.com
+overtureconfigleads@boom.aero,00meukdy2zkf4y7,Overture Functional Team Leads,,10,True,,Overtureconfigleads@boom.aero.test-google-a.com Overtureconfigleads@boomsupersonic.com
+overtureconfigurationteam@boom.aero,0111kx3o1grbtxk,Overture Configuration Team,,25,True,,OvertureConfigurationTeam@boom.aero.test-google-a.com OvertureConfigurationTeam@boomsupersonic.com
+overturecore@boom.aero,00gjdgxs2epxfl9,Overture Core,,2,True,,overturecore@boom.aero.test-google-a.com overturecore@boomsupersonic.com
+overtureleads@boom.aero,03tbugp12y8q11d,Overture Leads,,1,True,,overtureleads@boomsupersonic.com overtureleads@boom.aero.test-google-a.com
+overturestakeholders@boom.aero,00meukdy46so394,Overture Stakeholders,,0,True,,overturestakeholders@boomsupersonic.com overturestakeholders@boom.aero.test-google-a.com
+overturesuperfactory@boom.aero,0319y80a1k8gc0u,Overture Superfactory,,2,True,,OvertureSuperfactory@boom.aero.test-google-a.com OvertureSuperfactory@boomsupersonic.com
+overtureuac@boom.aero,03tbugp1393dpu7,Overture UAC Group,Group to apply permissions to Overture share,26,True,,OvertureUAC@boom.aero.test-google-a.com OvertureUAC@boomsupersonic.com
+ovt-ld@boom.aero,02p2csry0noalx5,OVT L&D,Overture Loads and Dynamics,1,False,,ovt-ld@boom.aero.test-google-a.com ovt-ld@boomsupersonic.com
+paypal-sales@boom.aero,03whwml42a9jo7o,paypal-sales,,0,True,,paypal-sales@boom.aero.test-google-a.com paypal-sales@boomsupersonic.com
+paypal@boom.aero,01fob9te407d2m4,paypal,,1,True,,paypal@boom.aero.test-google-a.com paypal@boomsupersonic.com
+peopleleadershipteam@boom.aero,01hmsyys0njnt2u,People Leadership Team,,0,True,PLT@boom.aero,peopleleadershipteam@boom.aero.test-google-a.com peopleleadershipteam@boomsupersonic.com PLT@boom.aero.test-google-a.com PLT@boomsupersonic.com
+peoplemanagers@boom.aero,028h4qwu24lvljb,People Managers,,22,True,,PeopleManagers@boom.aero.test-google-a.com PeopleManagers@boomsupersonic.com
+peopleops@boom.aero,02w5ecyt3s72p3k,People Operations,,2,False,,peopleops@boom.aero.test-google-a.com peopleops@boomsupersonic.com
+peopleteam@boom.aero,04h042r040vxttu,People Team,,6,True,,peopleteam@boom.aero.test-google-a.com peopleteam@boomsupersonic.com
+power.automate-svc-group@boom.aero,00qsh70q33qz7oj,Power Automate,Group for power.automate service account,4,True,,power.automate-svc-group@boom.aero.test-google-a.com power.automate-svc-group@boomsupersonic.com
+powerautomate-drive-viewers@boom.aero,0279ka653keu3m9,Powerautomate Google Drive Viewers,Users in this group have read access to the production powerautomate folder,1,True,,powerautomate-drive-viewers@boom.aero.test-google-a.com powerautomate-drive-viewers@boomsupersonic.com
+press@boom.aero,01x0gk371fwfljq,Press Inquires,Press at Boom.aero that will go directly to Spark,4,True,,press@boom.aero.test-google-a.com press@boomsupersonic.com
+procurement@boom.aero,01yyy98l1laf6v3,Procurement,,0,True,,procurement@boom.aero.test-google-a.com procurement@boomsupersonic.com
+product@boom.aero,02iq8gzs3g2hnum,Product,Internal UAC Group,2,True,,Product@boom.aero.test-google-a.com Product@boomsupersonic.com
+projectx@boom.aero,036ei31r0kttj37,projectx,SAP project with Cognitus,1,False,,projectx@boom.aero.test-google-a.com projectx@boomsupersonic.com
+promevo@boom.aero,0147n2zr44ubcdy,promevo,Promevo.com,3,False,,promevo@boom.aero.test-google-a.com promevo@boomsupersonic.com
+propulsionteam@boom.aero,019c6y180w0u43o,Propulsion Team,,4,True,,PropulsionTeam@boom.aero.test-google-a.com PropulsionTeam@boomsupersonic.com
+purchasing@boom.aero,036ei31r1qjtle9,Purchasing,,3,True,,purchasing@boom.aero.test-google-a.com purchasing@boomsupersonic.com
+pwchangelist-2022-04-15@boom.aero,04h042r03gs32xn,pwchangelist-2022-04-15,,12,False,,pwchangelist-2022-04-15@boom.aero.test-google-a.com pwchangelist-2022-04-15@boomsupersonic.com
+pxconcepttest@boom.aero,014ykbeg0lo1ycx,PX Concept Test Group,Test group for Website hosted by PX Dept.,30,True,,PXConceptTest@boom.aero.test-google-a.com PXConceptTest@boomsupersonic.com
+receiving@boom.aero,03q5sasy23a0hw9,Receiving,,0,True,,receiving@boom.aero.test-google-a.com receiving@boomsupersonic.com
+repricing2025@boom.aero,00tyjcwt3mqnc2a,repricing2025,,2,True,,repricing2025@boom.aero.test-google-a.com repricing2025@boomsupersonic.com
+rescale@boom.aero,023ckvvd4hls5uy,Rescale,Shared account for rescale usage,0,True,,rescale@boom.aero.test-google-a.com rescale@boomsupersonic.com
+revtrac-alert@boom.aero,048pi1tg24n7y6h,revtrac-alert,revtrac alert distro,4,True,,revtrac-alert@boom.aero.test-google-a.com revtrac-alert@boomsupersonic.com
+rollout@boom.aero,025b2l0r1bx2njn,Rollout,,1,True,,rollout@boom.aero.test-google-a.com rollout@boomsupersonic.com
+rsvp@boom.aero,03whwml41fw0hv8,rsvp,,1,True,,rsvp@boom.aero.test-google-a.com rsvp@boomsupersonic.com
+sae@boom.aero,023ckvvd371ozj0,SAE User Account,,2,True,,SAE@boom.aero.test-google-a.com SAE@boomsupersonic.com
+sales@boom.aero,02et92p02h0sb8o,Website sales contact email,,2,True,,sales@boomsupersonic.com sales@boom.aero.test-google-a.com
+sandbox-govcloud@boom.aero,02szc72q0rwdlrs,sandbox-govcloud,,2,True,,sandbox-govcloud@boom.aero.test-google-a.com sandbox-govcloud@boomsupersonic.com
+sap-ariba@boom.aero,02koq6563f218es,SAP ARIBA,Group email to monitor onboarding of vendors to Ariba,1,False,,sap-ariba@boom.aero.test-google-a.com sap-ariba@boomsupersonic.com
+sapns2btpnotifications@boom.aero,00zu0gcz2jqbo58,SAP.NS2.BTP.Notifications,,3,False,,sapns2btpnotifications@boom.aero.test-google-a.com sapns2btpnotifications@boomsupersonic.com
+sapns2sacnotifications@boom.aero,02250f4o18ps2qw,SAP.NS2.SAC.Notifications,SAP NS2 SAC System updates notifications,3,False,,sapns2sacnotifications@boom.aero.test-google-a.com sapns2sacnotifications@boomsupersonic.com
+security@boom.aero,03oy7u290jnqwhu,Security,Boom Security,5,True,,security@boom.aero.test-google-a.com security@boomsupersonic.com
+shipping@boom.aero,03jtnz0s3rnz5sn,Boom Shipping,,1,True,,shipping@boom.aero.test-google-a.com shipping@boomsupersonic.com
+simplyagree-service@boom.aero,030j0zll1ky7xbh,simplyagree-service,Service group for SimplyAgree,1,True,,simplyagree-service@boom.aero.test-google-a.com simplyagree-service@boomsupersonic.com
+smartsheet@boom.aero,01hmsyys2frzep1,smartsheet,,0,True,smartsheets@boom.aero,smartsheets@boom.aero.test-google-a.com smartsheets@boomsupersonic.com smartsheet@boom.aero.test-google-a.com smartsheet@boomsupersonic.com
+software-engineering@boom.aero,00vx12273bqcb0c,Software Engineering,,6,True,,software-engineering@boom.aero.test-google-a.com software-engineering@boomsupersonic.com
+software.licenses@boom.aero,049x2ik51x05uor,Software.Licenses,Software Licensing communications,2,True,,software.licenses@boom.aero.test-google-a.com software.licenses@boomsupersonic.com
+speakerrequests@boom.aero,00haapch2800meb,speakerrequests,Speaker Requests or conference requests ,0,True,,speakerrequests@boom.aero.test-google-a.com speakerrequests@boomsupersonic.com
+splashtop@boom.aero,02ce457m4ajazqs,Splashtop,Splashtop Streamer subscription acct,1,True,boom-splashtop@boom.aero,boom-splashtop@boom.aero.test-google-a.com boom-splashtop@boomsupersonic.com splashtop@boom.aero.test-google-a.com splashtop@boomsupersonic.com
+stockadmin@boom.aero,0206ipza21z38qv,Stock Administrator,Stock Administrator,0,True,,stockadmin@boom.aero.test-google-a.com stockadmin@boomsupersonic.com
+store@boom.aero,03whwml42hedc2z,Store,Store,0,True,,store@boom.aero.test-google-a.com store@boomsupersonic.com
+structures@boom.aero,025b2l0r1j53vtm,Structures,,5,True,,structures@boom.aero.test-google-a.com structures@boomsupersonic.com
+structuresteam@boom.aero,01jlao461no2ghr,Structuresteam,,8,True,,structuresteam@boom.aero.test-google-a.com structuresteam@boomsupersonic.com
+superpowerengineering@boom.aero,00qsh70q24moflo,Superpower Engineering,Superpower Engineering mailing list,24,True,,SuperpowerEngineering@boom.aero.test-google-a.com SuperpowerEngineering@boomsupersonic.com
+supersonicdesigns@boom.aero,0184mhaj1ev1gu8,Supersonic Designs,a new social contest where Boom followers are able to design their own Overture aircraft,0,True,,SupersonicDesigns@boom.aero.test-google-a.com SupersonicDesigns@boomsupersonic.com
+suppliers-aci@boom.aero,034g0dwd3ktxzwe,Suppliers-ACI,Aciturri Suppliers,0,True,,suppliers-aci@boom.aero.test-google-a.com suppliers-aci@boomsupersonic.com
+suppliers-ann@boom.aero,01gf8i8328ooaxt,Suppliers-ANN,Supplier group for Aernnova,2,True,,suppliers-ann@boom.aero.test-google-a.com suppliers-ann@boomsupersonic.com
+suppliers-ldo@boom.aero,02dlolyb421jv0p,Suppliers-LDO,For communications to LDO employees.,5,True,,suppliers-ldo@boom.aero.test-google-a.com suppliers-ldo@boomsupersonic.com
+suppliers-lis@boom.aero,02xcytpi1vayvq8,Suppliers-LIS,A group of suppliers from Latecoere Interconnection Systems ONLY,0,True,,suppliers-lis@boom.aero.test-google-a.com suppliers-lis@boomsupersonic.com
+suppliers-onsite-hq4@boom.aero,01qoc8b121mq6bz,Suppliers Onsite HQ4,Group ONLY ON-SITE suppliers are added to.,3,True,,suppliers-onsite-hq4@boom.aero.test-google-a.com suppliers-onsite-hq4@boomsupersonic.com
+suppliers@boom.aero,037m2jsg2lli9iy,Suppliers,,4,True,,suppliers@boom.aero.test-google-a.com suppliers@boomsupersonic.com
+supplychain@boom.aero,02nusc192p9dtwi,Supply Chain,Internal UAC Group ,1,True,,supplychain@boom.aero.test-google-a.com supplychain@boomsupersonic.com
+sustaining_eng@boom.aero,03mzq4wv2zhas0q,Sustaining ENG,,6,True,,sustaining_eng@boom.aero.test-google-a.com sustaining_eng@boomsupersonic.com
+svbfraudalert@boom.aero,0279ka653o42zhd,SVB.FRAUD.ALERT,Silicon Valley Bank communication on fraud they find.,1,False,,svbfraudalert@boom.aero.test-google-a.com svbfraudalert@boomsupersonic.com
+svbtech@boom.aero,00meukdy198ua68,svbtech,,0,True,,svbtech@boom.aero.test-google-a.com svbtech@boomsupersonic.com
+swag@boom.aero,048pi1tg2ww3qxs,Swag,Boom swag / Merchandise ,0,True,,swag@boom.aero.test-google-a.com swag@boomsupersonic.com
+symphony-engineering@boom.aero,0111kx3o0krfp74,symphony engineering,symphony engineers ,16,True,,symphony-engineering@boom.aero.test-google-a.com symphony-engineering@boomsupersonic.com
+systemsteam@boom.aero,02w5ecyt3ig2eoa,Systems Team,,3,True,,SystemsTeam@boom.aero.test-google-a.com SystemsTeam@boomsupersonic.com
+talent-attraction@boom.aero,04k668n320rh58v,Talent Attraction,Email alias for our Talent Attraction team,0,False,,talent-attraction@boom.aero.test-google-a.com talent-attraction@boomsupersonic.com
+team@boom.aero,02lwamvv3nqg2ui,Team,Boom FT Employees,114,True,employees@boom.aero,team@boom.aero.test-google-a.com team@boomsupersonic.com employees@boom.aero.test-google-a.com employees@boomsupersonic.com
+universityrelations@boom.aero,04bvk7pj1tj3wto,Boom University Relations,,0,True,,universityrelations@boom.aero.test-google-a.com universityrelations@boomsupersonic.com
+vault.admins@boom.aero,02y3w2471mi7g1z,Vault Admins,Vault Admins,3,True,,vault.admins@boom.aero.test-google-a.com vault.admins@boomsupersonic.com
+vault.users@boom.aero,0184mhaj11vzhpu,Vault Users,Vault Users,1,True,,vault.users@boom.aero.test-google-a.com vault.users@boomsupersonic.com
+verizon.wireless.billing@boom.aero,00zu0gcz10hk78e,Verizon Wireless Billing,Verizon Wireless Billing,3,True,,Verizon.wireless.billing@boom.aero.test-google-a.com Verizon.wireless.billing@boomsupersonic.com
+webadmin@boom.aero,01ljsd9k2jb5ke8,Web Admin,,3,True,,webadmin@boom.aero.test-google-a.com webadmin@boomsupersonic.com
+wizer.owner.group@boom.aero,01ci93xb14eo1ni,Wizer Owner Group,"Members who ""own"" wizer and the address set as the Wizer owner account",1,True,,wizer.owner.group@boom.aero.test-google-a.com wizer.owner.group@boomsupersonic.com
+workplaceadmin@boom.aero,00ihv6360rys0et,Workplace Admin,,6,True,,WorkplaceAdmin@boom.aero.test-google-a.com WorkplaceAdmin@boomsupersonic.com
+xb1-core@boom.aero,039kk8xu3ra0usk,XB1 Core,XB1 Core,2,True,,xb1-core@boom.aero.test-google-a.com xb1-core@boomsupersonic.com
+xb1_team@boom.aero,01302m9242aujeq,XB-1 Team,People assigned to XB-1 or actively involved,24,True,,XB1_team@boomsupersonic.com XB1_team@boom.aero.test-google-a.com
+zapier@boom.aero,01x0gk374g6d0fn,Zapier group email,,1,True,,zapier@boom.aero.test-google-a.com zapier@boomsupersonic.com
+zoom.owner@boom.aero,00z337ya1nswmcy,Zoom Owner,Incoming distro for Zoom Owner ghost account,2,True,,zoom.owner@boom.aero.test-google-a.com zoom.owner@boomsupersonic.com

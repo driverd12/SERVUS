@@ -23,7 +23,13 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("preflight")
 
 REQUIRED_SLACK_SCOPES = {"users:read.email"}
-SLACK_INVITE_SCOPE_OPTIONS = {"conversations:write", "channels:write", "groups:write"}
+SLACK_INVITE_SCOPE_OPTIONS = {
+    "conversations:write",
+    "channels:write",
+    "groups:write",
+    "channels:write.invites",
+    "groups:write.invites",
+}
 GOOGLE_GROUP_POLICY_FILE = REPO_ROOT / "servus" / "data" / "google_groups.yaml"
 SLACK_CHANNELS_FILE = REPO_ROOT / "servus" / "data" / "slack_channels.yaml"
 
@@ -141,7 +147,7 @@ def check_slack_scopes():
                 issues.append(f"missing={missing_base}")
             if not has_invite_scope:
                 issues.append(
-                    "missing invite scope (need one of conversations:write/channels:write/groups:write)"
+                    "missing invite scope (need one of conversations:write/channels:write/groups:write/channels:write.invites/groups:write.invites)"
                 )
             return [("Slack Scopes", f"❌ {', '.join(issues)}")]
 

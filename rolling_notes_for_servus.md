@@ -179,3 +179,9 @@
 - **CONSEQUENCES:** Group/channel targeting is now explicit in policy YAMLs; future tuning is file-only and auditable. Intern policy currently uses `internships@boom.aero` (existing group) alongside contractors baseline; suppliers get `suppliers@boom.aero` in addition to contractors baseline.
 - **ROLLBACK:** Revert `servus/data/google_groups.yaml`, `servus/data/slack_channels.yaml`, related docs updates, and rerun preflight/tests.
 - **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/google_groups.yaml, /Users/dan.driver/Cursor_projects/python/SERVUS/servus/data/slack_channels.yaml, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/Onboarding.md, /Users/dan.driver/Cursor_projects/python/SERVUS/docs/SERVUS_INSPECTION_PLAN.md
+
+- **DECISION:** Accept Slack invite-specific OAuth scopes (`channels:write.invites` / `groups:write.invites`) as valid for onboarding channel automation preflight checks.
+- **CONTEXT:** Slack app reinstall provided invite-specific scope variant, but preflight only recognized legacy/general write scopes and raised a false blocker.
+- **CONSEQUENCES:** Preflight now aligns with modern Slack scope naming and accurately reflects channel invite capability.
+- **ROLLBACK:** Revert `scripts/preflight_check.py` and `tests_python/test_preflight_check.py` to prior scope matcher behavior.
+- **LINKS:** /Users/dan.driver/Cursor_projects/python/SERVUS/scripts/preflight_check.py, /Users/dan.driver/Cursor_projects/python/SERVUS/tests_python/test_preflight_check.py

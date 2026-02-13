@@ -69,7 +69,7 @@ The opposite of [[Offboarding]]!
   - Supplier: `contractors@boom.aero` + `suppliers@boom.aero`
 - Current default Slack global channels (by name):
   - `company-announcements`, `hq4_alarm`, `hq4-facilities`, `hq4-announcements`, `new-part-who-dis`, `news`, `random`, `ev`, `kitties`, `puppies`, `lemons`, `coolshit`, `arrivals-departures`, `casp-facilities`, `ai-deas`, `ironbird-facilities`, `quotewall`, `be-inspired`
-- Slack channel automation requires invite-write scope on `SERVUS_SLACK_ADMIN_TOKEN` (`conversations:write` or `channels:write`/`groups:write` equivalent).
+- Slack channel automation requires invite-write scope on `SERVUS_SLACK_ADMIN_TOKEN` (for example `channels:write.invites`, `groups:write.invites`, or `conversations:write`).
 
 ### Queue submission helper (headless-safe)
 

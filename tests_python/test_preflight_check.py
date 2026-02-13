@@ -37,6 +37,21 @@ class TestPreflightCheck(unittest.TestCase):
 
     @patch("scripts.preflight_check.requests.post")
     @patch("scripts.preflight_check._configured_slack_channel_targets")
+    def test_check_slack_scopes_success_with_invites_scope(self, mock_targets, mock_post):
+        mock_targets.return_value = ["C01GENERAL"]
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"ok": True, "user": "svc", "team": "boom"}
+        mock_response.headers = {
+            "x-oauth-scopes": "users:read.email,channels:write.invites,channels:read"
+        }
+        mock_post.return_value = mock_response
+
+        with patch.dict(preflight_check.CONFIG, {"SLACK_TOKEN": "fake-token"}):
+            results = preflight_check.check_slack_scopes()
+            self.assertIn("✅", results[0][1])
+
+    @patch("scripts.preflight_check.requests.post")
+    @patch("scripts.preflight_check._configured_slack_channel_targets")
     def test_check_slack_scopes_missing_required_scope(self, mock_targets, mock_post):
         mock_targets.return_value = ["C01GENERAL"]
         mock_response = MagicMock()
